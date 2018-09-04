@@ -16,6 +16,8 @@ inputs:
   # - The task repository
 - name: log-cache-ci
 
+- name: version
+
 outputs:
   # - The artifacts used to create the github release
 - name: github-release

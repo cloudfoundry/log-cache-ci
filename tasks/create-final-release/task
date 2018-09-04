@@ -10,6 +10,8 @@
 
 set -ex
 
+NEW_VERSION=`cat version/version`
+
 # establish version/tag strings
 tag_name="v${NEW_VERSION}"
 

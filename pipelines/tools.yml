@@ -1,0 +1,48 @@
+resources:
+- name: log-cache-version
+  type: semver
+  source:
+    bucket: loggregator-ci-versions
+    key: log-cache
+    access_key_id: {{loggregator-team-s3-access-key}}
+    secret_access_key: {{loggregator-team-s3-secret-key}}
+
+jobs:
+###############################################################################
+# LOG CACHE
+###############################################################################
+- name: bump-pre-version
+  plan:
+  - get: log-cache-version
+    params: {bump: pre, pre: dev}
+  on_success:
+    do:
+    - put: log-cache-version
+      params: {file: log-cache-version/version}
+
+- name: bump-patch-version
+  plan:
+  - get: log-cache-version
+    params: {bump: patch}
+  on_success:
+    do:
+    - put: log-cache-version
+      params: {file: log-cache-version/version}
+
+- name: bump-minor-version
+  plan:
+  - get: log-cache-version
+    params: {bump: minor}
+  on_success:
+    do:
+    - put: log-cache-version
+      params: {file: log-cache-version/version}
+
+- name: bump-major-version
+  plan:
+  - get: log-cache-version
+    params: {bump: major}
+  on_success:
+    do:
+    - put: log-cache-version
+      params: {file: log-cache-version/version}

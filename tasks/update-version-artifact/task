@@ -1,0 +1,29 @@
+#!/bin/bash
+
+# vi:syntax=sh
+
+set -ex
+
+version=`cat log-cache-release-version/version`
+
+# # setup ssh for reading from github
+# eval "$(ssh-agent -s)"
+# mkdir -p ~/.ssh
+# echo -e "Host github.com\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
+# ssh-add <(echo "${SSH_KEY}")
+
+git clone log-cache-release-develop log-cache-release-develop-modified
+pushd log-cache-release-develop-modified
+  git checkout develop
+  echo $version > src/version
+  git add .
+  git commit -m "Bump version to ${version}"
+popd
+
+git clone log-cache-release-master log-cache-release-master-modified
+pushd log-cache-release-master-modified
+  git checkout master
+  echo $version > src/version
+  git add .
+  git commit -m "Bump version to ${version}"
+popd

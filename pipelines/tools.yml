@@ -1,3 +1,10 @@
+resource_types:
+- name: slack-notification
+  type: docker-image
+  source:
+    repository: cfcommunity/slack-notification-resource
+    tag: latest
+
 resources:
 - name: log-cache-version
   type: semver
@@ -7,6 +14,11 @@ resources:
     access_key_id: {{loggregator-team-s3-access-key}}
     secret_access_key: {{loggregator-team-s3-secret-key}}
 
+- name: slack-alert
+  type: slack-notification
+  source:
+    url: {{slack_alert_webhook_url}}
+
 jobs:
 ###############################################################################
 # LOG CACHE
@@ -15,10 +27,38 @@ jobs:
   plan:
   - get: log-cache-version
     params: {bump: pre, pre: dev}
+  - task: create-message
+    config:
+      image_resource:
+        type: docker-image
+        source: {repository: ubuntu}
+      platform: linux
+      inputs:
+      - name: log-cache-version
+      outputs:
+      - name: messages
+      run:
+        path: /bin/bash
+        args:
+        - -c
+        - |
+          #!/bin/bash
+          set -eux
+
+          new_version=`cat log-cache-version/version`
+          echo "Manually bumping pre version to ${new_version}" > messages/success.txt
+          cat messages/success.txt
   on_success:
     do:
     - put: log-cache-version
       params: {file: log-cache-version/version}
+    - put: slack-alert
+      params:
+        silent: true
+        username: {{slack_alert_username}}
+        icon_url: {{slack_alert_icon_url}}
+        channel: {{slack_alert_channel}}
+        text_file: messages/success.txt
 
 - name: bump-patch-version
   plan:

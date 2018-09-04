@@ -85,6 +85,8 @@ jobs:
     - get: log-cache-ci
   - get: log-cache-version
     params: {bump: patch}
+  - task: update-version-artifact
+    file: log-cache-ci/tasks/update-version-artifact/task.yml
   - task: create-final-release
     file: log-cache-ci/tasks/create-final-release/task.yml
     input_mapping:

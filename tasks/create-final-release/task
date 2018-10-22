@@ -14,11 +14,6 @@ echo "TBD" > github-release/body
 pushd log-cache-release-master
   git checkout master
 
-  # commit version bump
-  echo $new_version > src/version
-  git add .
-  git commit -m "Bump version to ${new_version}"
-
   # create release
   cat << EOF > config/private.yml
 ---

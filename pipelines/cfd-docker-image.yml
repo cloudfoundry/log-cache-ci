@@ -1,0 +1,27 @@
+---
+- name: cf-deployment-concourse-tasks-image
+  public: true
+  plan:
+  - aggregate:
+    - get: log-cache-ci
+    - get: log-cache-ci-docker-images
+      trigger: true
+  - aggregate:
+    - task: build-log-cache-image
+      file: log-cache-ci/tasks/build-cli-docker-image/task.yml
+      input_mapping:
+        context-repo: log-cache-ci-docker-images
+        source-repo: log-cache
+      output_mapping:
+        build-image: build-log-cache-image
+      params:
+        CONTEXT_PATH: docker-images/log-cache
+        BASE_PACKAGE: code.cloudfoundry.org/log-cache
+  - aggregate:
+    - put: log-cache-image
+      params:
+        build: build-log-cache-image/build
+        tag: build-log-cache-image/tag
+        tag_as_latest: true
+        cache: true
+        cache_tag: latest

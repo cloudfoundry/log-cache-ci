@@ -83,7 +83,7 @@ resources:
   type: git
   source:
     uri: git@github.com:cloudfoundry/log-cache-ci
-    branch: master
+    branch: mg-tood-images
     private_key: ((github-key-ci.yml/Notes/github_key))
 
 - name: log-cache-ci-docker-images
@@ -102,26 +102,26 @@ resources:
     username: ((docker-hub-ci.yml/Notes/docker-hub-username))
     password: ((docker-hub-ci.yml/Notes/docker-hub-password))
 
-- name: scheduler-image
-  type: docker-image
-  source:
-    repository: logcache/log-cache-scheduler
-    username: ((docker-hub-ci.yml/Notes/docker-hub-username))
-    password: ((docker-hub-ci.yml/Notes/docker-hub-password))
+# - name: scheduler-image
+#   type: docker-image
+#   source:
+#     repository: logcache/log-cache-scheduler
+#     username: ((docker-hub-ci.yml/Notes/docker-hub-username))
+#     password: ((docker-hub-ci.yml/Notes/docker-hub-password))
 
-- name: nozzle-image
-  type: docker-image
-  source:
-    repository: logcache/log-cache-nozzle
-    username: ((docker-hub-ci.yml/Notes/docker-hub-username))
-    password: ((docker-hub-ci.yml/Notes/docker-hub-password))
+# - name: nozzle-image
+#   type: docker-image
+#   source:
+#     repository: logcache/log-cache-nozzle
+#     username: ((docker-hub-ci.yml/Notes/docker-hub-username))
+#     password: ((docker-hub-ci.yml/Notes/docker-hub-password))
 
-- name: gateway-image
-  type: docker-image
-  source:
-    repository: logcache/log-cache-gateway
-    username: ((docker-hub-ci.yml/Notes/docker-hub-username))
-    password: ((docker-hub-ci.yml/Notes/docker-hub-password))
+# - name: gateway-image
+#   type: docker-image
+#   source:
+#     repository: logcache/log-cache-gateway
+#     username: ((docker-hub-ci.yml/Notes/docker-hub-username))
+#     password: ((docker-hub-ci.yml/Notes/docker-hub-password))
 
 - name: log-cache-release
   type: git
@@ -310,7 +310,7 @@ jobs:
     - get: log-cache-ci
     - get: log-cache-ci-docker-images
       trigger: true
-    - get: log-cache
+    - get: log-cache-release
       trigger: true
       passed: ["log-cache-bump-submodule"]
   - aggregate:
@@ -318,42 +318,42 @@ jobs:
       file: log-cache-ci/tasks/build-go-docker-image/task.yml
       input_mapping:
         context-repo: log-cache-ci-docker-images
-        source-repo: log-cache
+        source-repo: log-cache-release
       output_mapping:
         build-image: build-log-cache-image
       params:
         CONTEXT_PATH: docker-images/log-cache
         BASE_PACKAGE: code.cloudfoundry.org/log-cache
-    - task: build-nozzle-image
-      file: log-cache-ci/tasks/build-go-docker-image/task.yml
-      input_mapping:
-        context-repo: log-cache-ci-docker-images
-        source-repo: log-cache
-      output_mapping:
-        build-image: build-nozzle-image
-      params:
-        CONTEXT_PATH: docker-images/log-cache-nozzle
-        BASE_PACKAGE: code.cloudfoundry.org/log-cache
-    - task: build-gateway-image
-      file: log-cache-ci/tasks/build-go-docker-image/task.yml
-      input_mapping:
-        context-repo: log-cache-ci-docker-images
-        source-repo: log-cache
-      output_mapping:
-        build-image: build-gateway-image
-      params:
-        CONTEXT_PATH: docker-images/log-cache-gateway
-        BASE_PACKAGE: code.cloudfoundry.org/log-cache
-    - task: build-scheduler-image
-      file: log-cache-ci/tasks/build-go-docker-image/task.yml
-      input_mapping:
-        context-repo: log-cache-ci-docker-images
-        source-repo: log-cache
-      output_mapping:
-        build-image: build-scheduler-image
-      params:
-        CONTEXT_PATH: docker-images/log-cache-scheduler
-        BASE_PACKAGE: code.cloudfoundry.org/log-cache
+    # - task: build-nozzle-image
+    #   file: log-cache-ci/tasks/build-go-docker-image/task.yml
+    #   input_mapping:
+    #     context-repo: log-cache-ci-docker-images
+    #     source-repo: log-cache-release
+    #   output_mapping:
+    #     build-image: build-nozzle-image
+    #   params:
+    #     CONTEXT_PATH: docker-images/log-cache-nozzle
+    #     BASE_PACKAGE: code.cloudfoundry.org/log-cache
+    # - task: build-gateway-image
+    #   file: log-cache-ci/tasks/build-go-docker-image/task.yml
+    #   input_mapping:
+    #     context-repo: log-cache-ci-docker-images
+    #     source-repo: log-cache-release
+    #   output_mapping:
+    #     build-image: build-gateway-image
+    #   params:
+    #     CONTEXT_PATH: docker-images/log-cache-gateway
+    #     BASE_PACKAGE: code.cloudfoundry.org/log-cache
+    # - task: build-scheduler-image
+    #   file: log-cache-ci/tasks/build-go-docker-image/task.yml
+    #   input_mapping:
+    #     context-repo: log-cache-ci-docker-images
+    #     source-repo: log-cache-release
+    #   output_mapping:
+    #     build-image: build-scheduler-image
+    #   params:
+    #     CONTEXT_PATH: docker-images/log-cache-scheduler
+    #     BASE_PACKAGE: code.cloudfoundry.org/log-cache
   - aggregate:
     - put: log-cache-image
       params:
@@ -362,27 +362,27 @@ jobs:
         tag_as_latest: true
         cache: true
         cache_tag: latest
-    - put: nozzle-image
-      params:
-        build: build-nozzle-image/build
-        tag: build-nozzle-image/tag
-        tag_as_latest: true
-        cache: true
-        cache_tag: latest
-    - put: gateway-image
-      params:
-        build: build-gateway-image/build
-        tag: build-gateway-image/tag
-        tag_as_latest: true
-        cache: true
-        cache_tag: latest
-    - put: scheduler-image
-      params:
-        build: build-scheduler-image/build
-        tag: build-scheduler-image/tag
-        tag_as_latest: true
-        cache: true
-        cache_tag: latest
+    # - put: nozzle-image
+    #   params:
+    #     build: build-nozzle-image/build
+    #     tag: build-nozzle-image/tag
+    #     tag_as_latest: true
+    #     cache: true
+    #     cache_tag: latest
+    # - put: gateway-image
+    #   params:
+    #     build: build-gateway-image/build
+    #     tag: build-gateway-image/tag
+    #     tag_as_latest: true
+    #     cache: true
+    #     cache_tag: latest
+    # - put: scheduler-image
+    #   params:
+    #     build: build-scheduler-image/build
+    #     tag: build-scheduler-image/tag
+    #     tag_as_latest: true
+    #     cache: true
+    #     cache_tag: latest
 
 - name: log-cache-bump-submodule
   serial: true

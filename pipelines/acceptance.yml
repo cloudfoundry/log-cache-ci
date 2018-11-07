@@ -53,6 +53,12 @@ resources:
     uri: https://github.com/cloudfoundry/cf-deployment
     branch: master
 
+- name: isocfd
+  type: git
+  source:
+    uri: https://github.com/cloudfoundry/cf-deployment
+    branch: loggregator-iso-segments-2
+
 - name: cf-deployment-concourse-tasks
   type: git
   source:
@@ -637,6 +643,7 @@ jobs:
     - get: bbl-state
       resource: denver-locks
     - get: cf-deployment
+    - get: isocfd
     - get: cf-deployment-concourse-tasks
     - get: cf-deployment-concourse-tasks-image
   - task: create-slack-message
@@ -694,6 +701,7 @@ jobs:
       inputs:
       - name: bbl-state
       - name: cf-deployment
+      - name: isocfd
       - name: log-cache-ci
       outputs:
       - name: ops-files
@@ -707,6 +715,10 @@ jobs:
           cp cf-deployment/operations/use-compiled-releases.yml ops-files
           cp log-cache-ci/ops-files/grafana-in-cf.yml ops-files
           cp log-cache-ci/ops-files/metric-registrar-in-cf.yml ops-files
+          cp cf-deployment/operations/test/add-persistent-isolation-segment-router.yml ops-files
+          cp cf-deployment/operations/test/add-persistent-isolation-segment-diego-cell.yml ops-files
+          cp isocfd/operations/test/add-persistent-isolation-segment-logging-system.yml ops-files
+          cp isocfd/operations/test/alter-router-for-log-agent.yml ops-files
 
           cat <<EOT >> ops-files/test-clients.yml
           - type: replace
@@ -973,6 +985,11 @@ jobs:
         cf-deployment-candidate-changes.yml
         grafana-in-cf.yml
         metric-registrar-in-cf.yml
+        add-persistent-isolation-segment-router.yml
+        add-persistent-isolation-segment-diego-cell.yml
+        add-persistent-isolation-segment-logging-system.yml
+        alter-router-for-log-agent.yml
+
   - task: enable-feature-flags
     file: cf-deployment-concourse-tasks/set-feature-flags/task.yml
     params:

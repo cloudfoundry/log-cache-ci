@@ -23,7 +23,7 @@ resources:
   type: git
   source:
     uri: git@github.com:cloudfoundry/log-cache-ci
-    branch: master
+    branch: mg-tp-json-key
     private_key: ((github-key-ci.yml/Notes/github_key))
 
 - name: log-cache-deployments
@@ -79,7 +79,6 @@ jobs:
       BOSH_ENVIRONMENT: bosh.run.pivotal.io
       JSON_KEY: ((release-credentials.yml/Notes/gcp-service-account-key))
       FORCE: true
-      REBASE: true
   - task: deploy
     image: cf-deployment-concourse-tasks-image
     config:

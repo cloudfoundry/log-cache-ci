@@ -1,0 +1,110 @@
+resource_types:
+- name: slack-notification
+  type: docker-image
+  source:
+    repository: cfcommunity/slack-notification-resource
+    tag: latest
+
+resources:
+- name: cf-deployment-concourse-tasks-image
+  type: docker-image
+  source:
+    repository: relintdockerhubpushbot/cf-deployment-concourse-tasks
+    tag: v5.24.0
+
+- name: log-cache-release
+  type: git
+  source:
+    uri: git@github.com:cloudfoundry/log-cache-release
+    branch: develop
+    private_key: ((github-key-ci.yml/Notes/github_key))
+
+- name: log-cache-ci
+  type: git
+  source:
+    uri: git@github.com:cloudfoundry/log-cache-ci
+    branch: master
+    private_key: ((github-key-ci.yml/Notes/github_key))
+
+- name: log-cache-deployments
+  type: git
+  source:
+    uri: git@github.com:cloudfoundry/log-cache-deployments
+    branch: master
+    private_key: ((github-key-ci.yml/Notes/github_key))
+
+- name: slack-alert
+  type: slack-notification
+  source:
+    url: ((slack-ci.yml/Notes/slack_alert_webhook_url))
+
+jobs:
+- name: log-cache-edge-deploy
+  plan:
+  - put: slack-alert
+    params:
+      silent: true
+      username: ((slack-ci.yml/Notes/slack_alert_username))
+      icon_url: ((slack-ci.yml/Notes/slack_alert_icon_url))
+      channel: ((slack-ci.yml/Notes/slack_alert_channel))
+      text: ":yellow_heart: Started :metric: Log Cache deployment to :knife: PWS Edge"
+  - aggregate:
+    - get: cf-deployment-concourse-tasks-image
+    - get: log-cache-release
+    - get: log-cache-ci
+    - get: log-cache-deployments
+      params: {pre: dev}
+  - task: upload-log-cache
+    file: log-cache-ci/tasks/upload-release/task.yml
+    image: cf-deployment-concourse-tasks-image
+    input_mapping:
+      bosh-release-dir: log-cache-release
+    params:
+      BOSH_CA_CERT: ((bosh-ca-cert.certificate))
+      BOSH_CLIENT: ((bosh-admin-client.username))
+      BOSH_CLIENT_SECRET: ((bosh-admin-client.password))
+      BOSH_ENVIRONMENT: bosh.run.pivotal.io
+      JSON_KEY: ((release-credentials.yml/Notes/gcp-service-account-key))
+      FORCE: true
+  - task: deploy
+    image: cf-deployment-concourse-tasks-image
+    config:
+      platform: linux
+      params:
+        BOSH_CA_CERT: ((bosh-ca-cert.certificate))
+        BOSH_CLIENT: ((bosh-admin-client.username))
+        BOSH_CLIENT_SECRET: ((bosh-admin-client.password))
+        BOSH_ENVIRONMENT: bosh.run.pivotal.io
+        BOSH_DEPLOYMENT: log-cache-edge
+      run:
+        path: bash
+        args:
+        - -c
+        - |
+          #!/bin/bash
+          set -eux
+
+          bosh \
+            deploy "log-cache-deployments/pws/edge/log-cache-edge-manifest.yml" \
+            --non-interactive
+      inputs:
+      - name: log-cache-deployments
+  on_success:
+    do:
+    - put: slack-alert
+      params:
+        silent: true
+        username: ((slack-ci.yml/Notes/slack_alert_username))
+        icon_url: ((slack-ci.yml/Notes/slack_alert_icon_url))
+        channel: ((slack-ci.yml/Notes/slack_alert_channel))
+        text: ":green_heart: Finished :metric: Log Cache deployment to :knife: PWS Edge"
+  on_failure:
+    do:
+    - put: slack-alert
+      params:
+        silent: true
+        username: ((slack-ci.yml/Notes/slack_alert_username))
+        icon_url: ((slack-ci.yml/Notes/slack_alert_icon_url))
+        channel: ((slack-ci.yml/Notes/slack_alert_channel))
+        text: ":broken_heart: Failed to deploy :metric: Log Cache: to :knife: PWS Edge
+          Details here: https://log-cache.ci.cf-app.com/teams/main/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME"

@@ -1,0 +1,39 @@
+#!/bin/bash
+
+set -ex
+
+export GOPATH="$PWD/go"
+
+set +x
+if ! [[ -z "${GITHUB_PRIVATE_KEY}" ]]; then
+  set -x
+  mkdir -p ~/.ssh/
+
+  git config --global url."git@github.com:".insteadOf "https://github.com/"
+  # github.com pre-auth'd entry, preventing MITM
+  echo "|1|NPml+mK9dImOEfdPPlukb1XTa8Y=|iwB+yq574d08bYzXF8LsBDGFMqg= ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAq2A7hRGmdnm9tUDbO9IDSwBK6TbQa+PXYPCPy6rbTrTtw7PHkccKrpp0yVhp5HdEIcKr6pLlVDBfOLX9QUsyCOV0wzfjIJNlGEYsdlLJizHhbn2mUjvSAHQqZETYP81eFzLQNnPHt4EVVUh7VfDESU84KezmD5QlWpXLmvU31/yMf+Se8xhHTvKSCZIFImWwoG6mbUoWf9nzpIoaSjB+weqqUUmpaaasXVal72J+UX2B+2RPW3RcT0eOzQgqlJL3RKrTJvdsjE3JEAvGq3lGHSZXy28G3skua2SmVi/w4yCE6gbODqnTWlg7+wC604ydGXA8VJiS5ap43JXiUFFAaQ==" > ~/.ssh/known_hosts
+
+  set +x
+  echo "${GITHUB_PRIVATE_KEY}" > ~/.ssh/id_github_com
+  chmod 0600 ~/.ssh/id_github_com
+  set -x
+
+  echo "Host github.com" > ~/.ssh/config
+  echo -e "\t Hostname github.com" >> ~/.ssh/config
+  echo -e "\t User git" >> ~/.ssh/config
+  echo -e "\t IdentityFile ~/.ssh/id_github_com" >> ~/.ssh/config
+fi
+
+if [[ -z "${SUB_FOLDERS}" ]]; then
+  pushd source-repo
+    go mod download
+    go test ./... -race
+  popd
+else
+  for sub in ${SUB_FOLDERS}; do
+    pushd source-repo/${sub}
+      go mod download
+      go test ./... -race
+    popd
+  done
+fi

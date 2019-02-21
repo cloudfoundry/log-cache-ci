@@ -1,0 +1,19 @@
+---
+platform: linux
+
+# caches:
+# - path: bosh-release-dir/blobs
+
+inputs:
+- name: log-cache-ci # - This repo
+- name: bosh-dev-release-dir  # - The release to upload
+- name: bosh-dev-release-version
+
+outputs:
+- name: metric-store-dev-release
+
+run:
+  path: log-cache-ci/tasks/create-dev-release/task
+
+params:
+  JSON_KEY:

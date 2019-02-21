@@ -11,12 +11,14 @@ resources:
     source:
       uri: git@github.com:cloudfoundry/log-cache-ci
       branch: master
+      private_key: ((github-key-ci.yml/Notes/github_key))
 
   - name: log-cache-deployments
     type: git
     source:
       uri: git@github.com:cloudfoundry/log-cache-deployments
       branch: master
+      private_key: ((github-key-ci.yml/Notes/github_key))
 
   - name: p-o11y-store-src
     type: git
@@ -96,6 +98,11 @@ jobs:
           tile-config: log-cache-ci
           tile-version: p-metric-store-version
         params:
+          OPSMAN_USER: ((opsman-user.username))
+          OPSMAN_PASSWORD: ((opsman-user.password))
+          BLOBSTORE_ACCESS_ID: ((blobstore-access-id))
+          BLOBSTORE_SECRET_ACCESS_KEY: ((blobstore-secret-access-key))
+          OPSMAN_SSH_KEY: ((ops-man-ssh-key.private_key))
           STEMCELL_URL: https://s3.amazonaws.com/bosh-gce-light-stemcells/light-bosh-stemcell-170.16-google-kvm-ubuntu-xenial-go_agent.tgz
           STEMCELL_SHA: 9bb3663ee35f795f466a65a5fb185c4b650049cd
           PRODUCT_CONFIG_PATH: tile-config/tile/metric-store-config.yml

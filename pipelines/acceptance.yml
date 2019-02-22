@@ -711,7 +711,7 @@ jobs:
         JSON_KEY: ((release-credentials.yml/Notes/gcp-service-account-key))
     - put: metric-store-dev-release
       params:
-        file: release-*.tgz
+        file: metric-store-dev-release/release-*.tgz
         content_type: application/octet-stream
     - put: metric-store-dev-release-version
       params: { file: metric-store-dev-release-version/version }

@@ -1,0 +1,50 @@
+#!/bin/bash -euf
+echo "running build and install"
+# root_dir=$(pwd)
+# scripts_dir=$(cd $(dirname $0) && pwd)
+# # p_prometheus_dir=$(cd ${scripts_dir}/../../.. && pwd)
+# baked_tile_dir=${root_dir}/baked-tile
+# ops_manager_dir=${root_dir}/deployment-tools
+# environment_dir=${root_dir}/environment
+
+# mkdir -p ${baked_tile_dir}
+export RELEASE_VERSION=$(cat tile-version/version)
+
+# download p-prom releases
+
+# ${root_dir}/tile-src/scripts/bake.sh ${baked_tile_dir}
+# ${root_dir}/tile-config/tasks/bake_and_install/bake.sh ${baked_tile_dir}
+
+mkdir -p releases
+mv metric-store-dev-release/*.tgz releases
+mv p-prom-telegraf-dummy-release/*.tgz releases
+mv p-prom-prometheus-dummy-release/*.tgz releases
+mv p-prom-cf-auth-proxy-dummy-release/*.tgz releases
+mv p-prom-thanos-dummy-release/*.tgz releases
+
+TILE_FILE=${baked_tile_dir}/o11y-store-${RELEASE_VERSION}.pivotal
+
+kiln bake \
+    --version "$RELEASE_VERSION" \
+    --metadata tile-src/metadata.yml \
+    --icon tile-src/icon.png \
+    --releases-directory releases \
+    --jobs-directory metric-store-release/jobs \
+    --instance-groups-directory metric-store-release/instance_groups \
+    --forms-directory metric-store-release/forms \
+    --bosh-variables-directory metric-store-release/variables \
+    --output-file ${TILE_FILE}
+
+echo "Freshly baked tile 🍞: ${TILE_FILE}"
+
+# source environment/environment.sh
+# source deployment-tools/prelude.sh
+# source deployment-tools/omg.sh
+
+# stemcell_filename=$(download-product ${STEMCELL_URL})
+
+# omg upload-product --product ${baked_tile_dir}/${TILE_NAME}-${RELEASE_VERSION}.pivotal
+# omg stage-product --product-name "observability-store" --product-version ${RELEASE_VERSION}
+# omg configure-product --config ${PRODUCT_CONFIG_PATH}
+# omg upload-stemcell --stemcell ${stemcell_filename} --floating true --shasum ${STEMCELL_SHA}
+# omg apply-changes --product-name "observability-store"

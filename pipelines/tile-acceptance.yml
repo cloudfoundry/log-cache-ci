@@ -17,7 +17,7 @@ resources:
     type: git
     source:
       uri: git@github.com:cloudfoundry/log-cache-ci
-      branch: master
+      branch: rh-mg-upload-dev-release
       private_key: ((github-key-ci.yml/Notes/github_key))
 
   - name: log-cache-deployments
@@ -38,7 +38,7 @@ resources:
     type: git
     source:
       uri: git@github.com:pivotal/metric-store-release
-      branch: develop
+      branch: rh-mg-upload-dev-release
       private_key: ((github-key-ci.yml/Notes/github_key))
 
   - name: p-metric-store-version
@@ -75,28 +75,28 @@ resources:
     source:
       bucket: pcf-observability-data-store
       json_key: ((release-credentials.yml/Notes/gcp-service-account-key))
-      regexp: prometheus-(.*).tgz
+      regexp: bosh-release-fakes/prometheus-(.*).tgz
 
   - name: p-prom-cf-auth-proxy-dummy-release
     type: gcs-resource
     source:
       bucket: pcf-observability-data-store
       json_key: ((release-credentials.yml/Notes/gcp-service-account-key))
-      regexp: cf-auth-proxy-(.*).tgz
+      regexp: bosh-release-fakes/cf-auth-proxy-(.*).tgz
 
   - name: p-prom-telegraf-dummy-release
     type: gcs-resource
     source:
       bucket: pcf-observability-data-store
       json_key: ((release-credentials.yml/Notes/gcp-service-account-key))
-      regexp: telegraf-(.*).tgz
+      regexp: bosh-release-fakes/telegraf-(.*).tgz
 
   - name: p-prom-thanos-dummy-release
     type: gcs-resource
     source:
       bucket: pcf-observability-data-store
       json_key: ((release-credentials.yml/Notes/gcp-service-account-key))
-      regexp: thanos-(.*).tgz
+      regexp: bosh-release-fakes/thanos-(.*).tgz
 
 jobs:
   - name: "🥓 Bake and Install Tile 🥓"
@@ -118,6 +118,7 @@ jobs:
         - get: p-prom-prometheus-dummy-release
         - get: p-prom-cf-auth-proxy-dummy-release
         - get: p-prom-thanos-dummy-release
+        - get: pcf-observability-ci-image
         attempts: 3
       # - task: "bump metric-store-release"
       #   file: concourse-tasks/pipeline/bump-submodule/task.yml

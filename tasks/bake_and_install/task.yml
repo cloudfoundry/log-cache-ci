@@ -4,6 +4,7 @@ platform: linux
 inputs:
   - name: environment
   - name: deployment-tools
+  - name: log-cache-ci
   - name: tile-src
   - name: tile-config
     optional: true

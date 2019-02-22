@@ -11,10 +11,6 @@ inputs:
   - name: tile-version
   - name: metric-store-dev-release
   - name: metric-store-release
-  - name: p-prom-telegraf-dummy-release
-  - name: p-prom-prometheus-dummy-release
-  - name: p-prom-cf-auth-proxy-dummy-release
-  - name: p-prom-thanos-dummy-release
 
 outputs:
   - name: baked-tile
@@ -22,10 +18,7 @@ outputs:
 params:
   OPSMAN_USER:
   OPSMAN_PASSWORD:
-  # BLOBSTORE_ACCESS_ID: ((blobstore-access-id))
-  # BLOBSTORE_SECRET_ACCESS_KEY: ((blobstore-secret-access-key))
-  # OPSMAN_SSH_KEY: ((ops-man-ssh-key.private_key))
-  TILE_NAME: o11y-store
+  TILE_NAME: p-o11y-store
   STEMCELL_URL:
   STEMCELL_SHA:
   PRODUCT_CONFIG_PATH:

@@ -70,34 +70,6 @@ resources:
       json_key: ((release-credentials.yml/Notes/gcp-service-account-key))
       regexp: metric-store-dev-releases/release-(.*).tgz
 
-  - name: p-prom-prometheus-dummy-release
-    type: gcs-resource
-    source:
-      bucket: pcf-observability-data-store
-      json_key: ((release-credentials.yml/Notes/gcp-service-account-key))
-      regexp: bosh-release-fakes/prometheus-(.*).tgz
-
-  - name: p-prom-cf-auth-proxy-dummy-release
-    type: gcs-resource
-    source:
-      bucket: pcf-observability-data-store
-      json_key: ((release-credentials.yml/Notes/gcp-service-account-key))
-      regexp: bosh-release-fakes/cf-auth-proxy-(.*).tgz
-
-  - name: p-prom-telegraf-dummy-release
-    type: gcs-resource
-    source:
-      bucket: pcf-observability-data-store
-      json_key: ((release-credentials.yml/Notes/gcp-service-account-key))
-      regexp: bosh-release-fakes/telegraf-(.*).tgz
-
-  - name: p-prom-thanos-dummy-release
-    type: gcs-resource
-    source:
-      bucket: pcf-observability-data-store
-      json_key: ((release-credentials.yml/Notes/gcp-service-account-key))
-      regexp: bosh-release-fakes/thanos-(.*).tgz
-
 jobs:
   - name: "🥓 Bake and Install Tile 🥓"
     serial: true
@@ -114,21 +86,8 @@ jobs:
             pre: build
         - get: metric-store-dev-release
           trigger: true
-        - get: p-prom-telegraf-dummy-release
-        - get: p-prom-prometheus-dummy-release
-        - get: p-prom-cf-auth-proxy-dummy-release
-        - get: p-prom-thanos-dummy-release
         - get: pcf-observability-ci-image
         attempts: 3
-      # - task: "bump metric-store-release"
-      #   file: concourse-tasks/pipeline/bump-submodule/task.yml
-      #   input_mapping:
-      #     release-repo: p-o11y-store-src
-      #     submodule-repo: metric-store-release
-      #   params:
-      #     SUBMODULE_PATH: "metric-store-release"
-      #     GIT_USER_EMAIL: cf-log-cache@pivotal.io
-      #     GIT_USER_NAME: Log Cache CI
       - task: "prepare deployment environment"
         file: bobble/ci-tasks/prepare-environment/prepare-environment.yml
         input_mapping:
@@ -140,23 +99,15 @@ jobs:
         file: log-cache-ci/tasks/bake_and_install/task.yml
         input_mapping:
           deployment-tools: bobble
-          # tile-src: bumped-release-repo
           tile-src: p-o11y-store-src
           tile-config: log-cache-ci
           tile-version: p-metric-store-version
         params:
           OPSMAN_USER: ((log-cache-ops-manager/Username))
           OPSMAN_PASSWORD: ((log-cache-ops-manager/Password))
-          # BLOBSTORE_ACCESS_ID: ((blobstore-access-id))
-          # BLOBSTORE_SECRET_ACCESS_KEY: ((blobstore-secret-access-key))
-          # OPSMAN_SSH_KEY: ((ops-man-ssh-key.private_key))
           STEMCELL_URL: https://s3.amazonaws.com/bosh-gce-light-stemcells/light-bosh-stemcell-170.16-google-kvm-ubuntu-xenial-go_agent.tgz
           STEMCELL_SHA: 9bb3663ee35f795f466a65a5fb185c4b650049cd
           PRODUCT_CONFIG_PATH: tile-config/tile/metric-store-config.yml
-      - put: p-o11y-store-src
-        params:
-          repository: bumped-release-repo
-          rebase: true
     ensure:
       put: p-metric-store-version
       params:

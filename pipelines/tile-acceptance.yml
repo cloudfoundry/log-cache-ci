@@ -27,13 +27,6 @@ resources:
       branch: master
       private_key: ((github-key-ci.yml/Notes/github_key))
 
-  - name: p-o11y-store-src
-    type: git
-    source:
-      uri: git@github.com:pivotal/p-o11y-store
-      branch: master
-      private_key: ((github-key-ci.yml/Notes/github_key))
-
   - name: metric-store-release
     type: git
     source:
@@ -77,7 +70,6 @@ jobs:
       - aggregate:
         - get: bobble
         - get: concourse-tasks
-        - get: p-o11y-store-src
         - get: log-cache-ci
         - get: log-cache-deployments
         - get: metric-store-release
@@ -99,7 +91,6 @@ jobs:
         file: log-cache-ci/tasks/bake_and_install/task.yml
         input_mapping:
           deployment-tools: bobble
-          tile-src: p-o11y-store-src
           tile-config: log-cache-ci
           tile-version: p-metric-store-version
         params:

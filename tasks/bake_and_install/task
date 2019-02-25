@@ -29,7 +29,7 @@ TILE_FILE=baked-tile/${TILE_NAME}-${RELEASE_VERSION}.pivotal
 kiln bake \
     --version "$RELEASE_VERSION" \
     --metadata metric-store-release/tile/metadata.yml \
-    --icon tile-src/icon.png \
+    --icon metric-store-release/tile/icon.png \
     --releases-directory releases \
     --jobs-directory metric-store-release/tile/jobs \
     --instance-groups-directory metric-store-release/tile/instance_groups \

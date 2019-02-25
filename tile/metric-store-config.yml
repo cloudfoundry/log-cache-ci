@@ -8,4 +8,3 @@ network-properties:
     - name: us-central1-c
   singleton_availability_zone:
     name: us-central1-a
-

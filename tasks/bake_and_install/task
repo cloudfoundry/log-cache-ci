@@ -1,6 +1,6 @@
 #!/bin/bash -euf
 echo "running build and install"
-export RELEASE_VERSION=$(cat tile-version/version)
+export RELEASE_VERSION=$(cat tile-version/version | sed s/-dev// | sed s/-build// )
 
 mkdir -p releases
 set +f

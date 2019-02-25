@@ -9,6 +9,7 @@ set -f
 
 RELEASE_URLS=(
   https://bosh.io/d/github.com/cloudfoundry-incubator/bpm-release
+  https://bosh.io/d/github.com/cloudfoundry-incubator/cf-routing-release
 )
 
 pushd releases

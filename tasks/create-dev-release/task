@@ -4,6 +4,16 @@ set -exu
 
 dev_version=$(cat bosh-dev-release-version/version)
 
+metric_store_dev_version_semver=$(cat bosh-dev-release-version/version | sed s/-.*//)
+metric_store_release_version_semver=$(cat metric-store-release/src/version)
+
+if [[ "${metric_store_dev_version_semver}" != "${metric_store_release_version_semver}" ]]; then
+  dev_version="${metric_store_release_version_semver}-dev.0"
+  echo ${dev_version} > bosh-new-dev-release-version/version
+else
+  cp bosh-dev-release-version/version bosh-new-dev-release-version/version
+fi
+
 pushd bosh-dev-release-dir
   if [[ -n ${JSON_KEY:-} ]]; then
     cat << EOF > config/private.yml

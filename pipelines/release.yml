@@ -95,7 +95,6 @@ resources:
     driver: gcs
     bucket: log-cache-ci-versions
     key: metric-store
-    initial_version: 0.0.0
     json_key: ((release-credentials.yml/Notes/gcp-service-account-key))
 
 - name: metric-store-release-version-major
@@ -104,7 +103,6 @@ resources:
     driver: gcs
     bucket: log-cache-ci-versions
     key: metric-store
-    initial_version: 0.0.0
     json_key: ((release-credentials.yml/Notes/gcp-service-account-key))
 
 - name: metric-store-release-version-minor
@@ -113,7 +111,6 @@ resources:
     driver: gcs
     bucket: log-cache-ci-versions
     key: metric-store
-    initial_version: 0.0.0
     json_key: ((release-credentials.yml/Notes/gcp-service-account-key))
 
 - name: metric-store-release-version-patch
@@ -122,7 +119,6 @@ resources:
     driver: gcs
     bucket: log-cache-ci-versions
     key: metric-store
-    initial_version: 0.0.0
     json_key: ((release-credentials.yml/Notes/gcp-service-account-key))
 
 - name: log-cache-cli-github-release-drafts
@@ -137,7 +133,7 @@ resources:
   type: git
   source:
     uri: git@github.com:cloudfoundry/log-cache-ci
-    branch: master
+    branch: mg-tp-sync-versions
     private_key: ((github-key-ci.yml/Notes/github_key))
 
 - name: log-cache-deployments
@@ -412,44 +408,59 @@ jobs:
   - aggregate:
     - get: cf-deployment-concourse-tasks-image
     - get: log-cache-ci
+    - get: metric-store-release-version
     - get: metric-store-release-version-patch
       params: {bump: patch}
-  - task: create-message
-    file: log-cache-ci/tasks/alert-message-release-start/task.yml
-    image: cf-deployment-concourse-tasks-image
+  # - task: create-message
+  #   file: log-cache-ci/tasks/alert-message-release-start/task.yml
+  #   image: cf-deployment-concourse-tasks-image
+  #   input_mapping:
+  #     version: metric-store-release-version-patch
+  #   params:
+  #     LEVEL: patch
+  - task: sync-versioning
+    file: log-cache-ci/tasks/sync_versions/patch.yml
     input_mapping:
-      version: metric-store-release-version-patch
-    params:
-      LEVEL: patch
+      this-version: metric-store-release-version-patch
+      main-version: metric-store-release-version
   on_success:
     do:
     - put: metric-store-release-version
-      params: {file: metric-store-release-version-patch/version}
+      params: {file: new-main-version/version}
     - put: metric-store-release-version-patch
-      params: {file: metric-store-release-version-patch/version}
-    - <<: *send-alert-message
+      params: {file: new-main-version/version}
+    # - <<: *send-alert-message
 
 - name: msr-minor-version
   plan:
   - aggregate:
     - get: cf-deployment-concourse-tasks-image
     - get: log-cache-ci
+    - get: metric-store-release-version
     - get: metric-store-release-version-minor
       params: {bump: minor}
-  - task: create-message
-    file: log-cache-ci/tasks/alert-message-release-start/task.yml
-    image: cf-deployment-concourse-tasks-image
+    - get: metric-store-release-version-major
+  # - task: create-message
+  #   file: log-cache-ci/tasks/alert-message-release-start/task.yml
+  #   image: cf-deployment-concourse-tasks-image
+  #   input_mapping:
+  #     version: metric-store-release-version-minor
+  #   params:
+  #     LEVEL: minor
+  - task: sync-versioning
+    file: log-cache-ci/tasks/sync_versions/minor.yml
     input_mapping:
-      version: metric-store-release-version-minor
-    params:
-      LEVEL: minor
+      this-version: metric-store-release-version-minor
+      main-version: metric-store-release-version
   on_success:
     do:
     - put: metric-store-release-version
-      params: {file: metric-store-release-version-minor/version}
+      params: {file: new-main-version/version}
     - put: metric-store-release-version-minor
-      params: {file: metric-store-release-version-minor/version}
-    - <<: *send-alert-message
+      params: {file: new-main-version/version}
+    - put: metric-store-release-version-major
+      params: {file: new-main-version/version}
+    # - <<: *send-alert-message
 
 - name: msr-major-version
   plan:
@@ -458,33 +469,33 @@ jobs:
     - get: log-cache-ci
     - get: metric-store-release-version-major
       params: {bump: major}
-  - task: create-message
-    file: log-cache-ci/tasks/alert-message-release-start/task.yml
-    image: cf-deployment-concourse-tasks-image
-    input_mapping:
-      version: metric-store-release-version-major
-    params:
-      LEVEL: major
+  # - task: create-message
+  #   file: log-cache-ci/tasks/alert-message-release-start/task.yml
+  #   image: cf-deployment-concourse-tasks-image
+  #   input_mapping:
+  #     version: metric-store-release-version-major
+  #   params:
+  #     LEVEL: major
   on_success:
     do:
     - put: metric-store-release-version
       params: {file: metric-store-release-version-major/version}
     - put: metric-store-release-version-major
       params: {file: metric-store-release-version-major/version}
-    - <<: *send-alert-message
+    # - <<: *send-alert-message
 
 - name: create-msr-private-release
   serial: true
   disable_manual_trigger: true
   plan:
   - get: metric-store-release-version-patch
-    trigger: true
+    # trigger: true
     passed: [msr-patch-version]
   - get: metric-store-release-version-minor
-    trigger: true
+    # trigger: true
     passed: [msr-minor-version]
   - get: metric-store-release-version-major
-    trigger: true
+    # trigger: true
     passed: [msr-major-version]
   - aggregate:
     - get: cf-deployment-concourse-tasks
@@ -493,28 +504,28 @@ jobs:
     - get: log-cache-ci
     - get: metric-store-release-version
     - get: metric-store
-  - task: create-private-release
-    file: log-cache-ci/tasks/create-private-release/task.yml
-    input_mapping:
-      release-master: metric-store-release-master
-      release-develop: metric-store-release-develop
-      release-version: metric-store-release-version
-      source-repo: metric-store
-    params:
-      SOURCE_PATH: github.com/pivotal/metric-store
-      JSON_KEY: ((release-credentials.yml/Notes/gcp-service-account-key))
-  - put: metric-store-release-master
-    params:
-      repository: release-master-modified
-      rebase: false
-  - put: metric-store-release-develop
-    params:
-      repository: release-develop-modified
-      rebase: false
-  - put: metric-store
-    params:
-      repository: source-repo-modified
-      only_tag: true
+  # - task: create-private-release
+  #   file: log-cache-ci/tasks/create-private-release/task.yml
+  #   input_mapping:
+  #     release-master: metric-store-release-master
+  #     release-develop: metric-store-release-develop
+  #     release-version: metric-store-release-version
+  #     source-repo: metric-store
+  #   params:
+  #     SOURCE_PATH: github.com/pivotal/metric-store
+  #     JSON_KEY: ((release-credentials.yml/Notes/gcp-service-account-key))
+  # - put: metric-store-release-master
+  #   params:
+  #     repository: release-master-modified
+  #     rebase: false
+  # - put: metric-store-release-develop
+  #   params:
+  #     repository: release-develop-modified
+  #     rebase: false
+  # - put: metric-store
+  #   params:
+  #     repository: source-repo-modified
+  #     only_tag: true
 
 - name: publish-msr-github-release
   serial: true

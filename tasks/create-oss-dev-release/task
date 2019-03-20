@@ -20,7 +20,7 @@ EOF
   fi
 
   # put go source files in src directory so go build is pleased.
-  mkdir -p src/github.com/cloudfoundry/metric-store-release
+  mkdir -p src/github.com/cloudfoundry/metric-store-release/src/{pkg,cmd}
   cp -r vendor/* src/
   cp -r src/pkg src/github.com/cloudfoundry/metric-store-release/src
   cp -r src/cmd src/github.com/cloudfoundry/metric-store-release/src

@@ -1,0 +1,4 @@
+# Share loggregator link cross deployment from CF (needed for prom scraper)
+- type: replace
+  path: /instance_groups/name=doppler/jobs/name=doppler/provides/loggregator/shared?
+  value: true

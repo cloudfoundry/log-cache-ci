@@ -11,6 +11,10 @@ releases:
   version: latest
 - name: bosh-dns
   version: latest
+- name: loggregator-agent
+  version: latest
+- name: routing
+  version: latest
 
 addons:
 - name: bosh-dns

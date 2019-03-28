@@ -119,6 +119,7 @@ resources:
   source:
     uri: git@github.com:cloudfoundry/log-cache-ci
     private_key: ((github-key-ci.yml/Notes/github_key))
+    branch: mg-jr-swap-deploys
 
 - name: log-cache-deployments
   type: git
@@ -940,6 +941,7 @@ jobs:
           cp cf-deployment/operations/use-compiled-releases.yml ops-files
           cp cf-deployment/operations/scale-to-one-az.yml ops-files
           cp oss-metric-store/manifests/ops-files/add-metric-store-to-cfd.yml ops-files
+          # cp log-cache-ci/ops-files/share-loggregator-link.yml ops-files
           cp log-cache-ci/ops-files/grafana-in-cf.yml ops-files
           cp log-cache-ci/ops-files/metric-registrar-in-cf.yml ops-files
           erb log-cache-ci/ops-files/oss-msats.yml.erb > ops-files/oss-msats.yml
@@ -1057,12 +1059,20 @@ jobs:
             value: 5
           EOT
 
+          cat <<EOT >> ops-files/share-loggregator-link.yml
+          - type: replace
+            path: /instance_groups/name=doppler/jobs/name=doppler/provides/loggregator?
+            value:
+              as: loggregator
+              shared: true
+          EOT
+
           cat <<EOT >> ops-files/use-log-cache-latest.yml
           - type: replace
             path: /releases/name=log-cache
             value:
               name: log-cache
-              version: latest
+              version: 2.2.0+dev.14
           EOT
 
           cat <<EOT >> ops-files/cf-deployment-log-cache-candidate-changes.yml
@@ -1111,6 +1121,7 @@ jobs:
         test-clients.yml
         bosh-speed.yml
         add-metric-store-to-cfd.yml
+        share-loggregator-link.yml
         cf-PR-log-cache-router-tls.yml
         cf-PR-log-cache-remove-expvar-forwarder.yml
         use-log-cache-latest.yml
@@ -1132,7 +1143,7 @@ jobs:
     params:
       BBL_STATE_DIR: ((bbl_state_dir))
       SYSTEM_DOMAIN: ((sys_domain))
-      MANIFEST_FILE: cf-deployment/manifests/p-metric-store.yml
+      MANIFEST_FILE: manifests/p-metric-store.yml
   - task: cleanup
     file: cf-deployment-concourse-tasks/bosh-cleanup/task.yml
     params:

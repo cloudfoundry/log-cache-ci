@@ -924,6 +924,7 @@ jobs:
       - name: bbl-state
       - name: cf-deployment
       - name: log-cache-ci
+      - name: oss-metric-store
       outputs:
       - name: ops-files
       params:
@@ -938,10 +939,9 @@ jobs:
 
           cp cf-deployment/operations/use-compiled-releases.yml ops-files
           cp cf-deployment/operations/scale-to-one-az.yml ops-files
+          cp oss-metric-store/manifests/ops-files/add-metric-store-to-cfd.yml ops-files
           cp log-cache-ci/ops-files/grafana-in-cf.yml ops-files
           cp log-cache-ci/ops-files/metric-registrar-in-cf.yml ops-files
-          cp log-cache-ci/ops-files/metric-store-in-cf.yml ops-files
-          cp log-cache-ci/ops-files/p-metric-store-in-cf.yml ops-files
           erb log-cache-ci/ops-files/oss-msats.yml.erb > ops-files/oss-msats.yml
 
           # TODO - remove this when cf-d has this by default
@@ -1110,8 +1110,7 @@ jobs:
         scale-to-one-az.yml
         test-clients.yml
         bosh-speed.yml
-        metric-store-in-cf.yml
-        p-metric-store-in-cf.yml
+        add-metric-store-to-cfd.yml
         cf-PR-log-cache-router-tls.yml
         cf-PR-log-cache-remove-expvar-forwarder.yml
         use-log-cache-latest.yml
@@ -1125,6 +1124,15 @@ jobs:
       BBL_STATE_DIR: ((bbl_state_dir))
       SYSTEM_DOMAIN: ((sys_domain))
       ENABLED_FEATURE_FLAGS: diego_docker
+  - task: p-metric-store-deploy
+    file: cf-deployment-concourse-tasks/bosh-deploy/task.yml
+    input_mapping:
+      vars-files: bbl-state
+      cf-deployment: log-cache-ci
+    params:
+      BBL_STATE_DIR: ((bbl_state_dir))
+      SYSTEM_DOMAIN: ((sys_domain))
+      MANIFEST_FILE: cf-deployment/manifests/p-metric-store.yml
   - task: cleanup
     file: cf-deployment-concourse-tasks/bosh-cleanup/task.yml
     params:

@@ -105,11 +105,16 @@ variables:
 - name: p_metric_store_to_logs_provider
   type: certificate
   options:
-    ca: loggregator_ca
+    # ca: loggregator_ca
     common_name: ms
     extended_key_usage:
     - client_auth
     - server_auth
+  consumes:
+    ca:
+      from: loggregator
+      properties:
+      - loggregator.tls.ca_cert
 - name: p_metric_store_ca
   type: certificate
   options:

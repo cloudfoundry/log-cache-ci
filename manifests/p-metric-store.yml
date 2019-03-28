@@ -16,15 +16,6 @@ releases:
 - name: routing
   version: latest
 
-addons:
-- name: bosh-dns
-  include:
-    stemcell:
-    - os: ubuntu-xenial
-  jobs:
-  - name: bosh-dns
-    release: bosh-dns
-
 instance_groups:
 - name: p-metric-store
   azs:

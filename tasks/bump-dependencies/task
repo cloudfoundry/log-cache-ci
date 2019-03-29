@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+
+set -eoux pipefail
+
+. ./log-cache-ci/tasks/shared_bash
+
+timestamp=$(date +%Y%m%d%H%M%S)
+
+set +eu
+. /usr/local/share/chruby/chruby.sh
+chruby 2.6.2
+set -eu
+
+gem install bundler
+
+git config --global user.email "cf-log-cache+github@pivotal.io" && git config --global user.name "Metric Store CI"
+set +x
+if ! [[ -z "${GITHUB_PRIVATE_KEY}" ]]; then
+  setup_github_ssh "${GITHUB_PRIVATE_KEY}"
+fi
+set -x
+
+git clone repo bumped-repo
+
+pushd bumped-repo
+  git checkout -b bump-dependencies-${timestamp}
+  cat <<EOF > Gemfile
+  source 'https://rubygems.org'
+
+  gem 'lapidarist', git: 'https://github.com/attack/lapidarist.git', branch: 'go-mod'
+EOF
+
+  bundle install
+
+  unset GOPATH
+
+#   go get github.com/cloudfoundry/metric-store-release@${oss_metric_store_sha}
+#   go mod tidy
+
+#   git status
+
+#   go mod vendor
+#   git status
+
+#   cat go.mod
+#   cat go.sum
+
+  # ls -alh
+
+  # # go list -mod=vendor -u -m -json all
+
+  # # go mod download
+  # # go mod vendor
+
+  # # go list -u -m -json all
+
+  bundle exec lapidarist -d . -t 'scripts/test unit' --debug -vvv --go -n 1 --except ${EXCEPT}
+
+  # git log -20
+
+  git push origin bump-dependencies-${timestamp}
+
+  # curl -d '{"title":"Bump Dependencies ${BUILD_NAME}","base":"master", "head":"bump-dependencies-${BUILD_NAME}"}' https://api.github.com/repos/cloudfoundry/metric-store-release/pulls
+popd

@@ -20,6 +20,7 @@ groups:
   - oss-msats
   - create-oss-metric-store-dev-release
   - bump-oss-metric-store
+  - bump-oss-metric-store-dependencies
 - name: log-cache
   jobs:
   - log-cache-bump-submodule
@@ -120,7 +121,7 @@ resources:
   source:
     uri: git@github.com:cloudfoundry/log-cache-ci
     private_key: ((github-key-ci.yml/Notes/github_key))
-    branch: master
+    branch: jr-mg-lapidarist
 
 - name: log-cache-deployments
   type: git
@@ -876,6 +877,25 @@ jobs:
         icon_url: ((slack-ci.yml/Notes/slack_alert_icon_url))
         channel: ((slack-ci.yml/Notes/slack_alert_channel))
         attachments_file: metadata/alert_message_failure
+
+- name: bump-oss-metric-store-dependencies
+  serial: true
+  plan:
+  - aggregate:
+    - get: log-cache-ci
+    - get: oss-metric-store
+      trigger: true
+      passed: ["oss-metric-store-unit-tests"]
+  - task: bump-oss-metric-store-dependencies
+    file: log-cache-ci/tasks/bump-dependencies/task.yml
+    input_mapping:
+      repo: oss-metric-store
+    params:
+      GITHUB_PRIVATE_KEY: ((github-key-ci.yml/Notes/ms_github_private_key))
+      EXCEPT: "google.golang.org/grpc"
+  # - put: oss-metric-store-release
+  #   params:
+  #     repository: bumped-repo
 
 - name: create-oss-metric-store-dev-release
   serial: true

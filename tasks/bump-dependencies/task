@@ -11,7 +11,7 @@ set +eu
 chruby 2.6.2
 set -eu
 
-gem install bundler
+# gem install bundler
 
 git config --global user.email "cf-log-cache+github@pivotal.io" && git config --global user.name "Metric Store CI"
 set +x
@@ -24,39 +24,16 @@ git clone repo bumped-repo
 
 pushd bumped-repo
   git checkout -b bump-dependencies-${timestamp}
-  cat <<EOF > Gemfile
-  source 'https://rubygems.org'
+  # cat <<EOF > Gemfile
+  # source 'https://rubygems.org'
 
-  gem 'lapidarist', git: 'https://github.com/attack/lapidarist.git', branch: 'go-mod'
-EOF
+  # gem 'lapidarist', git: 'https://github.com/attack/lapidarist.git', branch: 'go-mod'
+# EOF
 
-  bundle install
+  # bundle install
+  # unset GOPATH
 
-  unset GOPATH
-
-#   go get github.com/cloudfoundry/metric-store-release@${oss_metric_store_sha}
-#   go mod tidy
-
-#   git status
-
-#   go mod vendor
-#   git status
-
-#   cat go.mod
-#   cat go.sum
-
-  # ls -alh
-
-  # # go list -mod=vendor -u -m -json all
-
-  # # go mod download
-  # # go mod vendor
-
-  # # go list -u -m -json all
-
-  bundle exec lapidarist -d . -t 'scripts/test unit' --debug -vvv --go -n 1 --except ${EXCEPT}
-
-  # git log -20
+  # bundle exec lapidarist -d . -t 'scripts/test unit' --debug -vvv --go -n 1 --except ${EXCEPT}
 
   git push origin bump-dependencies-${timestamp}
 

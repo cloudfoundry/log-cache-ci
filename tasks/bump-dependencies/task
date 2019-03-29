@@ -31,7 +31,7 @@ EOF
   bundle install
   unset GOPATH
 
-  bundle exec lapidarist -d . -t 'scripts/test unit' --debug --go -n 1 --except ${EXCEPT} -l "lapidarist.log"
+  bundle exec lapidarist -d . -t 'scripts/test unit' --debug --go -n 1 --except ${EXCEPT} | tee lapidarist.out
 
   git push origin bump-dependencies-${timestamp}
 popd
@@ -42,9 +42,7 @@ cat << EOF > new_pull_request.json
     "base": "develop",
     "head": "bump-dependencies-${timestamp}",
     "body": "
-      ```
-      $(cat lapidarist.log.summary)
-      ```
+      $(cat lapidarist.out | sed -n '/Summary/,$p')
     "
   }
 EOF

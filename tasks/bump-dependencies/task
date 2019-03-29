@@ -39,11 +39,13 @@ popd
 cat << EOF > new_pull_request.json
   {
     "title": "Auto Bump Dependencies ${timestamp}",
-    "base": "master",
+    "base": "develop",
     "head": "bump-dependencies-${timestamp}",
     "body": ""
   }
 EOF
+
+cat new_pull_request.json
 
 curl -X POST \
   -H "authToken: ${GITHUB_AUTH_TOKEN}" \

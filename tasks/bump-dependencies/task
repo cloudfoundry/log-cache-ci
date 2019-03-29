@@ -31,24 +31,28 @@ EOF
   bundle install
   unset GOPATH
 
-  bundle exec lapidarist -d . -t 'scripts/test unit' --debug --go -n 2 --except ${EXCEPT}
+  bundle exec lapidarist -d . -t 'scripts/test unit' --debug --go -n 1 --except ${EXCEPT} -l "./lapidarist.log"
 
-  # git push origin bump-dependencies-${timestamp}
+  git push origin bump-dependencies-${timestamp}
 popd
 
-# cat << EOF > new_pull_request.json
-#   {
-#     "title": "Auto Bump Dependencies ${timestamp}",
-#     "base": "develop",
-#     "head": "bump-dependencies-${timestamp}",
-#     "body": "output will go here"
-#   }
-# EOF
+cat << EOF > new_pull_request.json
+  {
+    "title": "Auto Bump Dependencies ${timestamp}",
+    "base": "develop",
+    "head": "bump-dependencies-${timestamp}",
+    "body": "
+      ```
+      $(cat lapidarist.log)
+      ```
+    "
+  }
+EOF
 
-# cat new_pull_request.json
+cat new_pull_request.json
 
-# curl -X POST \
-#   -H "Authorization: token ${GITHUB_AUTH_TOKEN}" \
-#   -H "Content-Type: application/json" \
-#   -d "@new_pull_request.json" \
-#   https://api.github.com/repos/${GITHUB_REPO}/pulls
+curl -X POST \
+  -H "Authorization: token ${GITHUB_AUTH_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d "@new_pull_request.json" \
+  https://api.github.com/repos/${GITHUB_REPO}/pulls

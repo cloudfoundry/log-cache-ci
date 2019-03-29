@@ -9,9 +9,6 @@ inputs:
 - name: log-cache-ci
 - name: repo
 
-outputs:
-- name: bumped-repo
-
 run:
   path: log-cache-ci/tasks/bump-dependencies/task
 

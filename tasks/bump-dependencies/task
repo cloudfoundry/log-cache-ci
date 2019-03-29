@@ -20,9 +20,7 @@ if ! [[ -z "${GITHUB_PRIVATE_KEY}" ]]; then
 fi
 set -x
 
-git clone repo bumped-repo
-
-pushd bumped-repo
+pushd repo
   git checkout -b bump-dependencies-${timestamp}
   # cat <<EOF > Gemfile
   # source 'https://rubygems.org'

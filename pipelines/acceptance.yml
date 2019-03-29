@@ -893,9 +893,6 @@ jobs:
     params:
       GITHUB_PRIVATE_KEY: ((github-key-ci.yml/Notes/ms_github_private_key))
       EXCEPT: "google.golang.org/grpc"
-  # - put: oss-metric-store-release
-  #   params:
-  #     repository: bumped-repo
 
 - name: create-oss-metric-store-dev-release
   serial: true

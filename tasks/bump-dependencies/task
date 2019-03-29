@@ -34,6 +34,19 @@ pushd repo
   # bundle exec lapidarist -d . -t 'scripts/test unit' --debug -vvv --go -n 1 --except ${EXCEPT}
 
   git push origin bump-dependencies-${timestamp}
-
-  # curl -d '{"title":"Bump Dependencies ${BUILD_NAME}","base":"master", "head":"bump-dependencies-${BUILD_NAME}"}' https://api.github.com/repos/cloudfoundry/metric-store-release/pulls
 popd
+
+cat << EOF > new_pull_request.json
+  {
+    "title": "Auto Bump Dependencies ${timestamp}",
+    "base": "master",
+    "head": "bump-dependencies-${timestamp}",
+    "body": ""
+  }
+EOF
+
+curl -X POST \
+  -H "authToken: ${GITHUB_AUTH_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d "@new_pull_request.json" \
+  https://api.github.com/repos/${GITHUB_REPO}/pulls

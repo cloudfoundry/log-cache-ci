@@ -11,7 +11,7 @@ set +eu
 chruby 2.6.2
 set -eu
 
-# gem install bundler
+gem install bundler
 
 git config --global user.email "cf-log-cache+github@pivotal.io" && git config --global user.name "Metric Store CI"
 set +x
@@ -22,16 +22,16 @@ set -x
 
 pushd repo
   git checkout -b bump-dependencies-${timestamp}
-  # cat <<EOF > Gemfile
-  # source 'https://rubygems.org'
+  cat <<EOF > Gemfile
+  source 'https://rubygems.org'
 
-  # gem 'lapidarist', git: 'https://github.com/attack/lapidarist.git', branch: 'go-mod'
-# EOF
+  gem 'lapidarist', git: 'https://github.com/attack/lapidarist.git', branch: 'go-mod'
+EOF
 
-  # bundle install
-  # unset GOPATH
+  bundle install
+  unset GOPATH
 
-  # bundle exec lapidarist -d . -t 'scripts/test unit' --debug -vvv --go -n 1 --except ${EXCEPT}
+  bundle exec lapidarist -d . -t 'scripts/test unit' --debug -vvv --go -n 2 --except ${EXCEPT}
 
   git push origin bump-dependencies-${timestamp}
 popd
@@ -41,7 +41,7 @@ cat << EOF > new_pull_request.json
     "title": "Auto Bump Dependencies ${timestamp}",
     "base": "develop",
     "head": "bump-dependencies-${timestamp}",
-    "body": ""
+    "body": "output will go here"
   }
 EOF
 

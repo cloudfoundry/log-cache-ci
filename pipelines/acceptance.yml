@@ -419,6 +419,13 @@ resources:
     json_key: ((release-credentials.yml/Notes/gcp-service-account-key))
     regexp: temp-baked-tiles/(.*).pivotal
 
+# - name: weekly-on-sunday
+#   type: time
+#   source:
+#     location: America/Denver
+#     start: 5:00 PM
+#     days: [Sunday]
+
 jobs:
 ###############################################################################
 # LOG CACHE

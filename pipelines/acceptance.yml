@@ -691,6 +691,7 @@ jobs:
         attachments_file: metadata/alert_message_failure
 
 - name: bump-oss-metric-store
+  serial: true
   plan:
   - aggregate:
     - get: log-cache-ci
@@ -888,15 +889,21 @@ jobs:
 - name: bump-oss-metric-store-dependencies
   serial: true
   plan:
+  - get: weekly-on-sunday
+    trigger: true
   - aggregate:
     - get: log-cache-ci
     - get: oss-metric-store
       trigger: true
       passed: ["oss-metric-store-unit-tests"]
-  - task: bump-oss-metric-store-dependencies
-    file: log-cache-ci/tasks/bump-dependencies/task.yml
+  - task: tidy-dependencies
+    file: log-cache-ci/tasks/tidy-dependencies/task.yml
     input_mapping:
       repo: oss-metric-store
+  - task: bump-dependencies
+    file: log-cache-ci/tasks/bump-dependencies/task.yml
+    input_mapping:
+      repo: tidy-repo
     params:
       GITHUB_REPO: "cloudfoundry/metric-store-release"
       GITHUB_USER: "metric-store-ci"

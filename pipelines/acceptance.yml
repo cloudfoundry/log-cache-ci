@@ -1057,7 +1057,6 @@ jobs:
           cp cf-deployment/operations/use-compiled-releases.yml ops-files
           cp cf-deployment/operations/scale-to-one-az.yml ops-files
           cp cf-deployment/operations/experimental/add-system-metrics-agent.yml ops-files
-          cp cf-deployment/operations/experimental/add-metric-store.yml ops-files
           cp log-cache-ci/ops-files/grafana-in-cf.yml ops-files
           cp log-cache-ci/ops-files/add-grafana-uaa-clients.yml ops-files
           cp log-cache-ci/ops-files/enable-grafana-uaa.yml ops-files
@@ -1251,7 +1250,6 @@ jobs:
         scale-loggregator-components-up.yml
         test-clients.yml
         bosh-speed.yml
-        add-metric-store.yml
         this-should-already-exist-delete-soon.yml
         p-metric-store-in-cf.yml
         cf-PR-log-cache-router-tls.yml

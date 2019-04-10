@@ -1250,7 +1250,6 @@ jobs:
         scale-loggregator-components-up.yml
         test-clients.yml
         bosh-speed.yml
-        this-should-already-exist-delete-soon.yml
         p-metric-store-in-cf.yml
         cf-PR-log-cache-router-tls.yml
         cf-PR-log-cache-remove-expvar-forwarder.yml

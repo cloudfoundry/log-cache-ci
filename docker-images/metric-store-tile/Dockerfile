@@ -25,6 +25,7 @@ RUN wget -q -O - https://raw.githubusercontent.com/starkandwayne/homebrew-cf/mas
   && apt-get update \
   && apt-get install om
 
+# cf-log-cache team in google cloud:
 RUN wget -q https://storage.googleapis.com/smith-cli/smith-v2.1.0_linux_amd64.tar.gz \
   && tar -xzf smith-v2.1.0_linux_amd64.tar.gz \
   && chmod +x smith \

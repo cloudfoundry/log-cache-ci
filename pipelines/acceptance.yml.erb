@@ -11,6 +11,7 @@ groups:
   <% envs_we_care_about.each do |name, _| %>
   - "Install on PCF <%= name %>"
   <% end %>
+  - build-final-metric-store-tile
   - log-cache-acceptance-tests-release-bump-submodule
   - lcats
   - cats
@@ -60,6 +61,7 @@ groups:
   - p-metric-store-release-elect-promotion
   - p-metric-store-master-promotion
   - bump-oss-metric-store
+  - build-final-metric-store-tile
 - name: log-cache-cli
   jobs:
   - log-cache-cli-tests
@@ -459,13 +461,6 @@ resources:
     tarball: true
     preserve_filename: true
 
-- name: smith-cli
-  type: git
-  source:
-    uri: git@github.com:pivotal/smith
-    branch: master
-    private_key: ((github-key-ci.yml/Notes/temp_github_private_key))
-
 - name: hourly-during-the-workday
   type: time
   source:
@@ -542,7 +537,6 @@ jobs:
     - get: log-cache-release
       trigger: true
       passed: ["log-cache-bump-submodule"]
-    - get: smith-cli
   - aggregate:
     - task: build-log-cache-image
       file: log-cache-ci/tasks/build-go-docker-image/task.yml
@@ -1383,7 +1377,7 @@ jobs:
     - get: cf-deployment-concourse-tasks
     - get: p-metric-store-release
       trigger: true
-      passed: ["cf-deploy", "🚽 Install Tile 🍾"]
+      passed: ["cf-deploy"]
   - task: create-slack-message
     file: log-cache-ci/tasks/alert-message-create/task.yml
     params:
@@ -1502,7 +1496,6 @@ jobs:
     - get: temp-baked-tile
       trigger: true
       passed: ["🥖 Bake Tile 🍰"]
-    - get: smith-cli
     - get: gcp-light-stemcell
     attempts: 3
   - task: "Claim Smith Env"
@@ -1513,8 +1506,6 @@ jobs:
         type: docker-image
         source:
           repository: logcache/metric-store-tile
-      inputs:
-      - name: smith-cli
       outputs:
       - name: environment
       run:
@@ -1522,10 +1513,7 @@ jobs:
         args:
         - "-c"
         - |
-          set -eux
-          cd smith-cli
-            go install
-          cd -
+          set -eu
           # exports smith environment name to `env`
           $(smith claim -p <%= pool_name %> -n "cf-metric-store CI" | tail -1)
           echo "Claimed smith environment: ${env}"
@@ -1561,7 +1549,6 @@ jobs:
         source:
           repository: logcache/metric-store-tile
       inputs:
-      - name: smith-cli
       - name: baked-tile
       - name: gcp-light-stemcell
       - name: tile-version
@@ -1573,10 +1560,7 @@ jobs:
         args:
         - "-c"
         - |
-          set -eux
-          cd smith-cli
-            go install
-          cd -
+          set -eu
           export env=$(cat environment/name)
 
           export TILE_FILE=$(echo "$(set -- baked-tile/*.pivotal; echo "$1")")
@@ -1622,7 +1606,6 @@ jobs:
           source:
             repository: logcache/metric-store-tile
         inputs:
-        - name: smith-cli
         - name: environment
         run:
           path: sh
@@ -1630,10 +1613,6 @@ jobs:
           - "-c"
           - |
             set -e
-            cd smith-cli
-              go install
-            cd -
-
             smith unclaim -e $(cat environment/name)
       params:
         TOOLSMITHS_API_TOKEN: ((smith-token-cf-denver/Notes))
@@ -1929,6 +1908,8 @@ jobs:
   - aggregate:
     - get: hourly-during-the-workday
       trigger: true
+    - get: p-metric-store-release
+      passed: ["p-metric-store-release-elect-promotion"]
     - get: p-metric-store-release-elect
       passed: ["p-metric-store-release-elect-promotion"]
       trigger: true
@@ -2024,6 +2005,27 @@ jobs:
   - put: oss-metric-store-release-master
     params:
       repository: merged-dest
+
+- name: build-final-metric-store-tile
+  plan:
+  - aggregate:
+    # get the corresponsing OSS release as well
+    - get: p-metric-store-release
+      passed:
+        - p-metric-store-master-promotion
+        - "🚽 Install Tile 🍾"
+        <% envs_we_care_about.each do |name, _| %>
+        - "Install on PCF <%= name %>"
+        <% end %>
+    config:
+      platform: linux
+      run:
+        path: sh
+        args:
+        - "-c"
+        - |
+          set -eu
+          echo "hello todd"
 
 - name: log-cache-tools-tests
   serial: true

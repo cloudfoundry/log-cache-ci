@@ -1,3 +1,4 @@
+<% envs_we_care_about = { "2.4": "us_2_4", "2.5": "us_2_5", "2.6": "us_2_6" } %>
 groups:
 - name: all
   jobs:
@@ -7,7 +8,9 @@ groups:
   - cf-deploy
   - "🥖 Bake Tile 🍰"
   - "🚽 Install Tile 🍾"
-  - "Smith Install"
+  <% envs_we_care_about.each do |name, _| %>
+  - "Install on PCF <%= name %>"
+  <% end %>
   - log-cache-acceptance-tests-release-bump-submodule
   - lcats
   - cats
@@ -51,7 +54,9 @@ groups:
   - p-ms-🚬
   - "🥖 Bake Tile 🍰"
   - "🚽 Install Tile 🍾"
-  - "Smith Install"
+  <% envs_we_care_about.each do |name, _| %>
+  - "Install on PCF <%= name %>"
+  <% end %>
   - p-metric-store-release-elect-promotion
   - p-metric-store-master-promotion
   - bump-oss-metric-store
@@ -127,7 +132,7 @@ resources:
   source:
     uri: git@github.com:cloudfoundry/log-cache-ci
     private_key: ((github-key-ci.yml/Notes/github_key))
-    branch: master
+    branch: it-is-friday
 
 - name: log-cache-deployments
   type: git
@@ -140,7 +145,7 @@ resources:
   type: git
   source:
     uri: git@github.com:cloudfoundry/log-cache-ci
-    branch: master
+    branch: it-is-friday
     private_key: ((github-key-ci.yml/Notes/github_key))
     paths:
     - docker-images
@@ -430,7 +435,7 @@ resources:
     bucket: log-cache-ci-versions
     key: metric-store-release-acceptance-tile
     json_key: ((release-credentials.yml/Notes/gcp-service-account-key))
-    initial_version: 0.0.0
+    initial_version: 0.1.2-build.14
 
 - name: p-metric-store-dev-release
   type: gcs-resource
@@ -450,7 +455,7 @@ resources:
   type: bosh-io-stemcell
   source:
     name: bosh-google-kvm-ubuntu-xenial-go_agent
-    version_family: 170.latest
+    version_family: 250.latest
     tarball: true
     preserve_filename: true
 
@@ -537,6 +542,7 @@ jobs:
     - get: log-cache-release
       trigger: true
       passed: ["log-cache-bump-submodule"]
+    - get: smith-cli
   - aggregate:
     - task: build-log-cache-image
       file: log-cache-ci/tasks/build-go-docker-image/task.yml
@@ -1474,35 +1480,141 @@ jobs:
       params:
         OPSMAN_USER: ((log-cache-ops-manager/Username))
         OPSMAN_PASSWORD: ((log-cache-ops-manager/Password))
-        STEMCELL_URL: https://s3.amazonaws.com/bosh-gce-light-stemcells/light-bosh-stemcell-170.16-google-kvm-ubuntu-xenial-go_agent.tgz
-        STEMCELL_SHA: 9bb3663ee35f795f466a65a5fb185c4b650049cd
+        STEMCELL_URL: https://s3.amazonaws.com/bosh-gce-light-stemcells/light-bosh-stemcell-250.38-google-kvm-ubuntu-xenial-go_agent.tgz
+        STEMCELL_SHA: 014426acb722365a5c48ab731a797e92cbc0eb37
         PRODUCT_CONFIG_PATH: tile-config/tile/metric-store-config.yml
 
-- name: "Smith Install"
+<% envs_we_care_about.each do |env_version, pool_name| %>
+- name: "Install on PCF <%= env_version %>"
   plan:
-    - aggregate:
-      - get: concourse-tasks
-      - get: log-cache-ci
-      - get: p-metric-store-release
-        passed: ["🥖 Bake Tile 🍰"]
-      - get: oss-metric-store-dev-release
-        passed: ["🥖 Bake Tile 🍰"]
-      - get: p-metric-store-dev-release
-        passed: ["🥖 Bake Tile 🍰"]
-      - get: pcf-observability-ci-image
-      - get: p-metric-store-version
-        passed: ["🥖 Bake Tile 🍰"]
-      - get: temp-baked-tile
-        trigger: true
-        passed: ["🥖 Bake Tile 🍰"]
-      - get: smith-cli
-      - get: gcp-light-stemcell
-      attempts: 3
-    - task: "gimme smith env and install"
+  - aggregate:
+    - get: concourse-tasks
+    - get: log-cache-ci
+    - get: p-metric-store-release
+      passed: ["🥖 Bake Tile 🍰"]
+    - get: oss-metric-store-dev-release
+      passed: ["🥖 Bake Tile 🍰"]
+    - get: p-metric-store-dev-release
+      passed: ["🥖 Bake Tile 🍰"]
+    - get: pcf-observability-ci-image
+    - get: p-metric-store-version
+      passed: ["🥖 Bake Tile 🍰"]
+    - get: temp-baked-tile
+      trigger: true
+      passed: ["🥖 Bake Tile 🍰"]
+    - get: smith-cli
+    - get: gcp-light-stemcell
+    attempts: 3
+  - task: "Claim Smith Env"
+    tags: [ cf-log-cache-vsphere ]
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source:
+          repository: logcache/metric-store-tile
+      inputs:
+      - name: smith-cli
+      outputs:
+      - name: environment
+      run:
+        path: sh
+        args:
+        - "-c"
+        - |
+          set -eux
+          cd smith-cli
+            go install
+          cd -
+          # exports smith environment name to `env`
+          $(smith claim -p <%= pool_name %> -n "cf-metric-store CI" | tail -1)
+          echo "Claimed smith environment: ${env}"
+          echo ${env} > environment/name
+    attempts: 3
+    on_failure:
+      task: release-env
       tags: [ cf-log-cache-vsphere ]
-      input_mapping:
-        tile-version: p-metric-store-version
-        baked-tile: temp-baked-tile
+      config:
+        platform: linux
+        image_resource:
+          type: docker-image
+          source:
+            repository: logcache/base
+        run:
+          path: sh
+          args:
+          - "-c"
+          - |
+            set -e
+            sleep 10
+    params:
+      TOOLSMITHS_API_TOKEN: ((smith-token-cf-denver/Notes))
+  - task: "Upload and Install"
+    tags: [ cf-log-cache-vsphere ]
+    input_mapping:
+      tile-version: p-metric-store-version
+      baked-tile: temp-baked-tile
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source:
+          repository: logcache/metric-store-tile
+      inputs:
+      - name: smith-cli
+      - name: baked-tile
+      - name: gcp-light-stemcell
+      - name: tile-version
+      - name: environment
+      outputs:
+      - name: environment
+      run:
+        path: sh
+        args:
+        - "-c"
+        - |
+          set -eux
+          cd smith-cli
+            go install
+          cd -
+          export env=$(cat environment/name)
+
+          export TILE_FILE=$(echo "$(set -- baked-tile/*.pivotal; echo "$1")")
+          export RELEASE_VERSION=$(cat tile-version/version)
+          export STEMCELL_FILE=$(cat gcp-light-stemcell/url | cut -d / -f 6)
+          mv gcp-light-stemcell/stemcell.tgz gcp-light-stemcell/${STEMCELL_FILE}
+          smith om upload-product -- --product ${TILE_FILE}
+          smith om stage-product -- --product-name "p-metric-store" --product-version ${RELEASE_VERSION}
+          smith read > environment/metadata
+          # get the azs and network from that file
+          target=$(jq -r .ops_manager.url < environment/metadata)
+          ert_subnet=$(jq -r .ert_subnet < environment/metadata)
+          zone_1=$(jq -r .azs[0] < environment/metadata)
+          zone_2=$(jq -r .azs[1] < environment/metadata)
+          zone_3=$(jq -r .azs[2] < environment/metadata)
+          cat > metric-store-tile-config.yml <<EOF
+          ---
+          product-name: p-metric-store
+          network-properties:
+            network:
+              name: ${ert_subnet}
+            other_availability_zones:
+              - name: ${zone_1}
+              - name: ${zone_2}
+              - name: ${zone_3}
+            singleton_availability_zone:
+              name: ${zone_1}
+          EOF
+
+
+          smith om configure-product -- --config metric-store-tile-config.yml
+          smith om upload-stemcell -- --stemcell gcp-light-stemcell/${STEMCELL_FILE} -- --floating true
+          smith om apply-changes -- --product-name "p-metric-store"
+    params:
+      TOOLSMITHS_API_TOKEN: ((smith-token-cf-denver/Notes))
+    on_success:
+      task: release-env
+      tags: [ cf-log-cache-vsphere ]
       config:
         platform: linux
         image_resource:
@@ -1511,59 +1623,21 @@ jobs:
             repository: logcache/metric-store-tile
         inputs:
         - name: smith-cli
-        - name: baked-tile
-        - name: gcp-light-stemcell
-        - name: tile-version
-        outputs:
         - name: environment
         run:
           path: sh
           args:
           - "-c"
           - |
-            set -eux
+            set -e
             cd smith-cli
               go install
             cd -
-            # exports smith environment name to `env`
-            $(smith claim -p us_2_5 -n "cf-metric-store CI" | tail -1)
-            echo "Claimed smith environment: ${env}"
 
-            export TILE_FILE=$(echo "$(set -- baked-tile/*.pivotal; echo "$1")")
-            export RELEASE_VERSION=$(cat tile-version/version)
-            export STEMCELL_FILE=$(cat gcp-light-stemcell/url | cut -d / -f 6)
-            mv gcp-light-stemcell/stemcell.tgz gcp-light-stemcell/${STEMCELL_FILE}
-            smith om upload-product -- --product ${TILE_FILE}
-            smith om stage-product -- --product-name "p-metric-store" --product-version ${RELEASE_VERSION}
-            smith read > metadata
-            # get the azs and network from that file
-            target=$(jq -r .ops_manager.url < metadata)
-            ert_subnet=$(jq -r .ert_subnet < metadata)
-            zone_1=$(jq -r .azs[0] < metadata)
-            zone_2=$(jq -r .azs[1] < metadata)
-            zone_3=$(jq -r .azs[2] < metadata)
-            cat > metric-store-tile-config.yml <<EOF
-            ---
-            product-name: p-metric-store
-            network-properties:
-              network:
-                name: ${ert_subnet}
-              other_availability_zones:
-                - name: ${zone_1}
-                - name: ${zone_2}
-                - name: ${zone_3}
-              singleton_availability_zone:
-                name: ${zone_1}
-            EOF
-
-
-            smith om configure-product -- --config metric-store-tile-config.yml
-            smith om upload-stemcell -- --stemcell gcp-light-stemcell/${STEMCELL_FILE} -- --floating true
-            smith om apply-changes -- --product-name "p-metric-store"
+            smith unclaim -e $(cat environment/name)
       params:
         TOOLSMITHS_API_TOKEN: ((smith-token-cf-denver/Notes))
-        STEMCELL_URL: https://s3.amazonaws.com/bosh-gce-light-stemcells/light-bosh-stemcell-170.16-google-kvm-ubuntu-xenial-go_agent.tgz
-
+<% end %>
 - name: lcats
   serial_groups: [cf-deploy]
   plan:

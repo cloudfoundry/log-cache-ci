@@ -1,0 +1,49 @@
+#!/bin/bash -euf
+echo "running tile build"
+
+. ./log-cache-ci/tasks/shared_bash
+
+
+RELEASE_VERSION=$(yq .release.version pivnet_metadata/metadata.yml)
+
+mkdir -p releases
+pushd p-metric-store-release-repo
+  bosh create-release --version=$RELEASE_VERSION --final --tarball=../releases/p-metric-store-release.tgz
+popd
+
+pushd oss-metric-store-release-repo
+  bosh create-release --version=$RELEASE_VERSION --final --tarball=../releases/oss-metric-store-release.tgz
+popd
+
+RELEASE_URLS=(
+  https://bosh.io/d/github.com/cloudfoundry-incubator/bpm-release
+  https://bosh.io/d/github.com/cloudfoundry-incubator/cf-routing-release
+)
+
+pushd releases
+    for URL in ${RELEASE_URLS[@]}; do
+        curl \
+          --location \
+          --remote-name \
+          --remote-header-name \
+          --silent \
+          --retry 5 \
+          ${URL} || true
+    done
+popd
+
+mkdir -p baked-tile
+TILE_FILE=baked-tile/${TILE_NAME}-${RELEASE_VERSION}.pivotal
+
+kiln bake \
+    --version "$RELEASE_VERSION" \
+    --metadata metric-store-release/tile/metadata.yml \
+    --icon metric-store-release/tile/icon.png \
+    --releases-directory releases \
+    --properties-directory metric-store-release/tile/properties \
+    --jobs-directory metric-store-release/tile/jobs \
+    --instance-groups-directory metric-store-release/tile/instance_groups \
+    --bosh-variables-directory metric-store-release/tile/variables \
+    --output-file ${TILE_FILE}
+
+echo "Freshly baked tile 🍞: ${TILE_FILE}"

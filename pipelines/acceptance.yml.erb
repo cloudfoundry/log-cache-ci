@@ -1825,6 +1825,9 @@ jobs:
         <% envs_we_care_about.each do |name, _| %>
         - "Install on PCF <%= name %>"
         <% end %>
+    - get: oss-metric-store
+      passed:
+        - oss-metric-store-master-promotion
     config:
       platform: linux
       run:

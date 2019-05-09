@@ -11,13 +11,15 @@ groups:
   <% envs_we_care_about.each do |name, _| %>
   - "Install on PCF <%= name %>"
   <% end %>
-  - build-final-metric-store-tile
+  - 🥖 Bake Final Tile 🥖
+  - 🚀 Push to Pivnet 🚀
   - log-cache-acceptance-tests-release-bump-submodule
   - lcats
   - cats
   - log-cache-release-elect-promotion
   - log-cache-master-promotion
   - p-metric-store-release-elect-promotion
+  - p-metric-store-test-gate
   - p-metric-store-master-promotion
   - oss-metric-store-release-elect-promotion
   - oss-metric-store-master-promotion
@@ -49,6 +51,7 @@ groups:
   jobs:
   - p-metric-store-unit-tests
   - p-metric-store-release-elect-promotion
+  - p-metric-store-test-gate
   - p-metric-store-master-promotion
   - create-p-metric-store-dev-release
   - cf-deploy
@@ -61,7 +64,8 @@ groups:
   - p-metric-store-release-elect-promotion
   - p-metric-store-master-promotion
   - bump-oss-metric-store
-  - build-final-metric-store-tile
+  - 🥖 Bake Final Tile 🥖
+  - 🚀 Push to Pivnet 🚀
 - name: log-cache-cli
   jobs:
   - log-cache-cli-tests
@@ -95,13 +99,13 @@ resources:
   type: git
   source:
     uri: https://github.com/cloudfoundry/cf-deployment-concourse-tasks
-    branch: v7.9
+    branch: v8.12
 
 - name: cf-deployment-concourse-tasks-image
   type: docker-image
   source:
     repository: relintdockerhubpushbot/cf-deployment-concourse-tasks
-    tag: v5.26.0
+    tag: latest
 
 - name: denver-locks
   type: git
@@ -267,6 +271,7 @@ resources:
   type: git
   source:
     uri: git@github.com:cloudfoundry/metric-store-release
+    branch: develop
     private_key: ((github-key-ci.yml/Notes/github_key))
     ignore_paths:
     - .final_builds
@@ -452,6 +457,20 @@ resources:
     bucket: log-cache-ci-notifications
     json_key: ((release-credentials.yml/Notes/gcp-service-account-key))
     regexp: temp-baked-tiles/(.*).pivotal
+
+- name: freshly-baked-final-tiles
+  type: gcs-resource
+  source:
+    bucket: p-metric-store-release
+    json_key: ((release-credentials.yml/Notes/gcp-service-account-key))
+    regexp: tiles/(.*).pivotal
+
+- name: p-metric-store-pivnet-metadata
+  type: gcs-resource
+  source:
+    bucket: p-metric-store-release
+    json_key: ((release-credentials.yml/Notes/gcp-service-account-key))
+    versioned_file: pivnet/metadata.yml
 
 - name: gcp-light-stemcell
   type: bosh-io-stemcell
@@ -1692,6 +1711,20 @@ jobs:
     params:
       repository: merged-dest
 
+- name: p-metric-store-test-gate
+  serial: true
+  plan:
+    - aggregate:
+      - get: develop
+        resource: p-metric-store-release
+        trigger: true
+        passed:
+          - "p-ms-🚬"
+          - "🚽 Install Tile 🍾"
+          <% envs_we_care_about.each do |name, _| %>
+          - "Install on PCF <%= name %>"
+          <% end %>
+
 - name: p-metric-store-release-elect-promotion
   serial: true
   plan:
@@ -1699,7 +1732,8 @@ jobs:
     - get: develop
       resource: p-metric-store-release
       trigger: true
-      passed: ["p-ms-🚬"]
+      passed:
+        - p-metric-store-test-gate
     - get: p-metric-store-release
     - get: p-metric-store-release-elect
     - get: oss-metric-store-release-master
@@ -1814,29 +1848,39 @@ jobs:
     params:
       repository: merged-dest
 
-- name: build-final-metric-store-tile
+- name: 🥖 Bake Final Tile 🥖
   plan:
   - aggregate:
-    # get the corresponsing OSS release as well
-    - get: p-metric-store-release
+    - get: p-metric-store-release-master
       passed:
         - p-metric-store-master-promotion
-        - "🚽 Install Tile 🍾"
-        <% envs_we_care_about.each do |name, _| %>
-        - "Install on PCF <%= name %>"
-        <% end %>
-    - get: oss-metric-store
+    - get: oss-metric-store-release-master
       passed:
         - oss-metric-store-master-promotion
-    config:
-      platform: linux
-      run:
-        path: sh
-        args:
-        - "-c"
-        - |
-          set -eu
-          echo "hello todd"
+    - get: p-metric-store-pivnet-metadata
+    - get: pcf-observability-ci-image
+    - get: log-cache-ci
+  - task: bake-final-tile
+    image: pcf-observability-ci-image
+    input_mapping:
+      oss-metric-store-release-repo: oss-metric-store-release-master
+      p-metric-store-release-repo: p-metric-store-release-master
+      pivnet-metadata: p-metric-store-pivnet-metadata
+    file: log-cache-ci/tasks/tile_bake_final/task.yml
+  - put: freshly-baked-final-tiles
+    params:
+      file: baked-tile/*.pivotal
+      content_type: application/octet-stream
+
+- name: 🚀 Push to Pivnet 🚀
+  plan:
+  - get: freshly-baked-final-tiles
+    passed:
+    - "🥖 Bake Final Tile 🥖"
+#  - task: check-release-version-not-on-piv
+#  - task: push-to-piv
+
+
 
 - name: log-cache-tools-tests
   serial: true

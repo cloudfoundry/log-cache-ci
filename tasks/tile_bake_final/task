@@ -7,7 +7,19 @@ RELEASE_VERSION=$(yq r pivnet-metadata/metadata.yml release.version)
 
 mkdir -p releases
 pushd p-metric-store-release-repo
-  bosh create-release --version=$RELEASE_VERSION --final --tarball=../releases/p-metric-store-release.tgz
+  git rev-parse HEAD > css_sha
+  cat css_sha
+
+  if [ -f go.mod ]; then
+    set +e
+    cat go.mod | grep cloudfoundry/metric-store-release | sed 's/.*-\([a-f0-9]*\)$/\1/g' > oss_sha
+    cat oss_sha
+    set -e
+  fi
+
+  bosh -n create-release --sha2 --final \
+    --tarball ../release-tarball/release.tgz \
+    --version "${new_version}"
 popd
 
 pushd oss-metric-store-release-repo

@@ -4,7 +4,7 @@ echo "running tile build"
 . ./log-cache-ci/tasks/shared_bash
 
 
-RELEASE_VERSION=$(yq .release.version pivnet_metadata/metadata.yml)
+RELEASE_VERSION=$(yq .release.version pivnet-metadata/metadata.yml)
 
 mkdir -p releases
 pushd p-metric-store-release-repo

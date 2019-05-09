@@ -19,7 +19,7 @@ pushd p-metric-store-release-repo
 
   bosh -n create-release --sha2 --final \
     --tarball ../release-tarball/release.tgz \
-    --version "${new_version}"
+    --version "${RELEASE_VERSION}"
 popd
 
 pushd oss-metric-store-release-repo

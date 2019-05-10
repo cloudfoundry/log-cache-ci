@@ -1867,6 +1867,8 @@ jobs:
       p-metric-store-release-repo: p-metric-store-release-master
       pivnet-metadata: p-metric-store-pivnet-metadata
     file: log-cache-ci/tasks/tile_bake_final/task.yml
+    params:
+      JSON_KEY: ((release-credentials.yml/Notes/gcp-service-account-key))
   - put: freshly-baked-final-tiles
     params:
       file: baked-tile/*.pivotal

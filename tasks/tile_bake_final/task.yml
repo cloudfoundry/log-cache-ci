@@ -12,6 +12,7 @@ outputs:
 
 params:
   TILE_NAME: metric-store
+  JSON_KEY:
 
 run:
   path: log-cache-ci/tasks/tile_bake_final/task

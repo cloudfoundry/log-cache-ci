@@ -1,5 +1,4 @@
 #!/bin/bash -euf
-echo "running tile build"
 
 . ./log-cache-ci/tasks/shared_bash
 
@@ -7,22 +6,42 @@ RELEASE_VERSION=$(yq r pivnet-metadata/metadata.yml release.version)
 
 mkdir -p releases
 pushd p-metric-store-release-repo
+  echo_green "Adding OSS & CSS SHAs to p-metric-store-release"
   git rev-parse HEAD > css_sha
-  cat css_sha
+  echo "CSS SHA: $(cat css_sha)"
 
   if [ -f go.mod ]; then
     set +e
     cat go.mod | grep cloudfoundry/metric-store-release | sed 's/.*-\([a-f0-9]*\)$/\1/g' > oss_sha
-    cat oss_sha
+    echo "OSS SHA: $(cat oss_sha)"
     set -e
   fi
 
+  echo_green "BOSH creating p-metric-store-release ${RELEASE_VERSION}"
+
+  cat << EOF > config/private.yml
+---
+blobstore:
+  options:
+    credentials_source: static
+    json_key: |
+      $(echo ${JSON_KEY})
+EOF
   bosh -n create-release --sha2 --final \
     --tarball ../release-tarball/release.tgz \
     --version "${RELEASE_VERSION}"
 popd
 
+echo_green "BOSH creating oss-metric-store-release $RELEASE_VERSION"
 pushd oss-metric-store-release-repo
+  cat << EOF > config/private.yml
+---
+blobstore:
+  options:
+    credentials_source: static
+    json_key: |
+      $(echo ${JSON_KEY})
+EOF
   bosh create-release --version=$RELEASE_VERSION --final --tarball=../releases/oss-metric-store-release.tgz
 popd
 
@@ -31,8 +50,10 @@ RELEASE_URLS=(
   https://bosh.io/d/github.com/cloudfoundry-incubator/cf-routing-release
 )
 
+echo_green "Downloading depedency releases from bosh.io"
 pushd releases
     for URL in ${RELEASE_URLS[@]}; do
+        echo "Downloading ${URL}"
         curl \
           --location \
           --remote-name \
@@ -46,6 +67,8 @@ popd
 mkdir -p baked-tile
 TILE_FILE=baked-tile/${TILE_NAME}-${RELEASE_VERSION}.pivotal
 
+echo_green "Kiln baking tile"
+
 kiln bake \
     --version "$RELEASE_VERSION" \
     --metadata metric-store-release/tile/metadata.yml \
@@ -57,4 +80,4 @@ kiln bake \
     --bosh-variables-directory metric-store-release/tile/variables \
     --output-file ${TILE_FILE}
 
-echo "Freshly baked tile 🍞: ${TILE_FILE}"
+echo_green "Freshly baked tile 🍞: ${TILE_FILE}"

@@ -20,6 +20,10 @@ pushd p-metric-store-release-repo
 
   echo_green "BOSH creating p-metric-store-release ${RELEASE_VERSION}"
 
+  echo $RELEASE_VERSION > src/version
+  git add .
+  git commit -m "Bump version to ${RELEASE_VERSION}"
+
   cat << EOF > config/private.yml
 ---
 blobstore:
@@ -31,6 +35,25 @@ EOF
   bosh -n create-release --sha2 --final \
     --tarball ../releases/p-metric-store-release.tgz \
     --version "${RELEASE_VERSION}"
+
+  echo_green "Committing final release and git tag on master"
+  git add .
+  git commit -m "Create final release"
+
+  tag_name="v{$RELEASE_VERSION}"
+  final_release_abbrev=$(git rev-parse --abbrev-ref HEAD)
+  final_release_sha=$(git rev-parse HEAD)
+  git tag "${tag_name}" ${final_release_sha}
+
+  cp -r . ../p-metric-store-release-repo-modified
+popd
+
+echo_green "Merging version and release artifacts to develop"
+pushd p-metric-store-release-repo-develop
+  git remote add -f local_master ../p-metric-store-release-repo
+  git merge -v --no-ff -m "Merge final release artifacts" "local_master/${final_release_abbrev}"
+
+  cp -r . ../p-metric-store-release-repo-develop-modified
 popd
 
 echo_green "BOSH creating oss-metric-store-release $RELEASE_VERSION"

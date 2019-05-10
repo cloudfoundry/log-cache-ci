@@ -1851,6 +1851,7 @@ jobs:
 - name: 🥖 Bake Final Tile 🥖
   plan:
   - aggregate:
+    - get: p-metric-store-release
     - get: p-metric-store-release-master
       passed:
         - p-metric-store-master-promotion
@@ -1865,6 +1866,7 @@ jobs:
     input_mapping:
       oss-metric-store-release-repo: oss-metric-store-release-master
       p-metric-store-release-repo: p-metric-store-release-master
+      p-metric-store-release-repo-develop: p-metric-store-release
       pivnet-metadata: p-metric-store-pivnet-metadata
     file: log-cache-ci/tasks/tile_bake_final/task.yml
     params:
@@ -1873,6 +1875,14 @@ jobs:
     params:
       file: baked-tile/*.pivotal
       content_type: application/octet-stream
+  - put: p-metric-store-release
+    params:
+      repository: p-metric-store-release-repo-develop-modified
+      rebase: false
+  - put: p-metric-store-release-master
+    params:
+      repository: p-metric-store-release-repo-modified
+      rebase: false
 
 - name: 🚀 Push to Pivnet 🚀
   plan:

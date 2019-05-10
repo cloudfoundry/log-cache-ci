@@ -3,6 +3,7 @@
 . ./log-cache-ci/tasks/shared_bash
 
 RELEASE_VERSION=$(yq r pivnet-metadata/metadata.yml release.version)
+TIMESTAMP=$(date +%s)
 
 mkdir -p releases
 pushd p-metric-store-release-repo
@@ -42,7 +43,8 @@ blobstore:
     json_key: |
       $(echo ${JSON_KEY})
 EOF
-  bosh create-release --version=$RELEASE_VERSION --final --tarball=../releases/oss-metric-store-release.tgz
+  OSS_RELEASE_VERSION="$(cat version)-tile.${TIMESTAMP}"
+  bosh create-release --version=$OSS_RELEASE_VERSION --final --tarball=../releases/oss-metric-store-release.tgz
 popd
 
 RELEASE_URLS=(
@@ -65,7 +67,7 @@ pushd releases
 popd
 
 mkdir -p baked-tile
-TILE_FILE=baked-tile/${TILE_NAME}-${RELEASE_VERSION}.pivotal
+TILE_FILE=baked-tile/${TILE_NAME}-${RELEASE_VERSION}-${TIMESTAMP}.pivotal
 
 echo_green "Kiln baking tile"
 

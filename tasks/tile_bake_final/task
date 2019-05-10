@@ -73,13 +73,13 @@ echo_green "Kiln baking tile"
 
 kiln bake \
     --version "$RELEASE_VERSION" \
-    --metadata metric-store-release/tile/metadata.yml \
-    --icon metric-store-release/tile/icon.png \
+    --metadata p-metric-store-release-repo/tile/metadata.yml \
+    --icon p-metric-store-release-repo/tile/icon.png \
     --releases-directory releases \
-    --properties-directory metric-store-release/tile/properties \
-    --jobs-directory metric-store-release/tile/jobs \
-    --instance-groups-directory metric-store-release/tile/instance_groups \
-    --bosh-variables-directory metric-store-release/tile/variables \
+    --properties-directory p-metric-store-release-repo/tile/properties \
+    --jobs-directory p-metric-store-release-repo/tile/jobs \
+    --instance-groups-directory p-metric-store-release-repo/tile/instance_groups \
+    --bosh-variables-directory p-metric-store-release-repo/tile/variables \
     --output-file ${TILE_FILE}
 
 echo_green "Freshly baked tile 🍞: ${TILE_FILE}"

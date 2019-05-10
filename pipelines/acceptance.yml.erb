@@ -88,6 +88,12 @@ resource_types:
   source:
     repository: frodenas/gcs-resource
 
+- name: pivnet
+  type: docker-image
+  source:
+    repository: pivotalcf/pivnet-resource
+    tag: latest-final
+
 resources:
 - name: cf-deployment
   type: git
@@ -479,6 +485,12 @@ resources:
     version_family: 250.latest
     tarball: true
     preserve_filename: true
+
+- name: p-metric-store-pivnet
+  type: pivnet
+  source:
+    api_token: ((release-credentials.yml/Notes/pivnet-token-metric-store))
+    product_slug: app-metrics-store-pcf
 
 - name: hourly-during-the-workday
   type: time
@@ -1889,10 +1901,14 @@ jobs:
   - get: freshly-baked-final-tiles
     passed:
     - "🥖 Bake Final Tile 🥖"
-#  - task: check-release-version-not-on-piv
-#  - task: push-to-piv
-
-
+  - get: p-metric-store-pivnet-metadata
+    passed:
+    - "🥖 Bake Final Tile 🥖"
+  - put: p-metric-store-pivnet
+    params:
+      file_glob: freshly-baked-final-tiles/*.pivotal
+      metadata_file: p-metric-store-pivnet-metadata/metadata.yml
+      override: false # do not re-upload already uploaded version
 
 - name: log-cache-tools-tests
   serial: true

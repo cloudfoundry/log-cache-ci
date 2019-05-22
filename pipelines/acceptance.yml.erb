@@ -1267,6 +1267,48 @@ jobs:
     params:
       file: new-tile-version/version
 
+- name: "Renew Acceptance OM Certs"
+  plan:
+    - aggregate:
+        - get: bobble
+        - get: log-cache-ci
+    - task: "Give bobble what it needs"
+      config:
+        platform: linux
+        image_resource:
+          type: docker-image
+          source:
+            repository: logcache/metric-store-tile
+        outputs:
+        - name: environment
+        params:
+          TOOLSMITHS_ENV_JSON: ((ms-pas-acceptance.json/Notes))
+        run:
+          path: sh
+          args:
+          - "-c"
+          - |
+            set -eu
+            echo ${TOOLSMITHS_ENV_JSON} > env.json
+            export NAME=$(jq -r .name < env.json)
+
+            cat > environment/environment.sh <<EOF
+            #!/bin/bash
+            export GCP_BUCKET="pcf-observability"
+            export ENV_NAME="${NAME}"
+            export LB_DOMAIN="cf-denver.com"
+            export FQDN="${ENV_NAME}.${LB_DOMAIN}"
+            export ZONE="cf-denver"
+            export EMAIL="cf-log-cache@pivotal.io"
+            export LPASS_OPSMAN_CREDS="Shared-observability-research/log-cache-ops-manager"
+            export LPASS_PIVNET_TOKEN="Shared-observability-research/log-cache-pivnet-token"
+            EOF
+
+            chmod +x environment/environment.sh
+
+
+
+
 - name: "🚽 Install Tile 🍾"
   plan:
     - aggregate:

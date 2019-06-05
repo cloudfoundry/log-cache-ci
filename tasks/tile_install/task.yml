@@ -6,7 +6,6 @@ inputs:
   - name: gcp-light-stemcell
   - name: tile-version
   - name: log-cache-ci
-  - name: loggregator-agent-dev-release
   - name: environment
     optional: true
 

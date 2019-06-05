@@ -11,6 +11,7 @@ inputs:
   - name: bpm-release
   - name: cf-routing-release
   - name: loggregator-agent-release
+  - name: loggregator-agent-dev-release
 
 outputs:
   - name: baked-tile

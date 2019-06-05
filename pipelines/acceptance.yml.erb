@@ -1274,7 +1274,7 @@ jobs:
       - get: bpm-release
       - get: cf-routing-release
       - get: loggregator-agent-release
-      - get: cf-deployment-concourse-tasks
+      - get: cf-deployment-concourse-tasks-image
       - get: loggregator-agent-dev-dir
       attempts: 3
     - task: build-agent

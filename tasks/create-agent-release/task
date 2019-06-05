@@ -1,0 +1,11 @@
+#!/bin/bash
+
+set -exu
+
+. ./log-cache-ci/tasks/shared_bash
+
+pushd loggregator-agent-dev-dir
+  bosh create-release --force \
+    --tarball ../loggregator-agent-dev-release/release.tgz \
+    --version "0.0.1+dev.1"
+popd

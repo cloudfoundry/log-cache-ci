@@ -1,0 +1,12 @@
+---
+platform: linux
+
+inputs:
+- name: log-cache-ci
+- name: loggregator-agent-dev-dir
+
+outputs:
+- name: loggregator-agent-dev-release
+
+run:
+  path: log-cache-ci/tasks/create-agent-release/task

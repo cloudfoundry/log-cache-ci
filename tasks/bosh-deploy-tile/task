@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+
+set -efux
+
+ROOT=${PWD}
+echo "${OM_KEY}" > opsman_ssh.key
+chmod 0600 opsman_ssh.key
+
+cat << EOF > metric-store-release/config/private.yml
+---
+blobstore:
+  options:
+    credentials_source: static
+    json_key: |
+      $(echo ${JSON_KEY})
+EOF
+
+cat <<-EOF > ~/.om-creds
+target: https://${OM_HOST}
+username: ${OM_USERNAME}
+password: ${OM_PASSWORD}
+EOF
+
+BOSH_ENVS_VARS=$(om -k -e ~/.om-creds curl -s --path /api/v0/deployed/director/credentials/bosh_commandline_credentials | jq -r '.credential | split(" ") | .[:-2] | .[]')
+
+for VAR in ${BOSH_ENVS_VARS[@]}; do
+    export $VAR
+done
+
+export CREDHUB_SERVER=https://${BOSH_ENVIRONMENT}:8844
+BOSH_ENVIRONMENT=https://${BOSH_ENVIRONMENT}:25555
+
+scp -o StrictHostKeyChecking=no -i opsman_ssh.key ubuntu@${OM_HOST}:${BOSH_CA_CERT} bosh-ca.crt
+BOSH_CA_CERT="${ROOT}/bosh-ca.crt"
+
+export BOSH_ALL_PROXY=ssh+socks5://ubuntu@${OM_HOST}:22?private-key=${ROOT}/opsman_ssh.key
+export CREDHUB_PROXY=ssh+socks5://ubuntu@${OM_HOST}:22?private-key=${ROOT}/opsman_ssh.key
+export CREDHUB_CLIENT=${BOSH_CLIENT}
+export CREDHUB_SECRET=${BOSH_CLIENT_SECRET}
+export CREDHUB_CA_CERT=${BOSH_CA_CERT}
+SCRIPT_DIR=$(cd $(dirname $0) && pwd)
+
+bosh deploy \
+  --non-interactive \
+  --deployment p-metric-store-f05c8ccdaa06a3f11f9d \
+  --no-redact \
+  ${SCRIPT_DIR}/../manifests/log-store.yml \
+  --var cf-deployment-name=cf-d4013c4e3d89cfce330b \
+  --var cf-ca-cert="$(om -k -e ~/.om-creds certificate-authorities --format json | jq 'first.cert_pem')" \
+  --var credhub-client-cert="((/opsmgr/cf-d4013c4e3d89cfce330b/doppler/metron_tls_cert.cert_pem))" \
+  --var credhub-client-key="((/opsmgr/cf-d4013c4e3d89cfce330b/doppler/metron_tls_cert.private_key_pem))" \
+  --var doppler-client-secret="((/opsmgr/cf-d4013c4e3d89cfce330b/uaa/doppler_client_credentials.password))" \
+  --var noisy-neighbor-nozzle-client-secret="((/opsmgr/cf-d4013c4e3d89cfce330b/uaa/noisy_neighbor_client_credentials.password))" \
+  --var network="santaclarita-pas-subnet" \
+  --var az="us-central1-f" \
+  --var vm-extension="vm-extension-syslog_adapter-90535dc31d2d4a61d0e4" \
+  --var system_domain="sys.santaclarita.cf-app.com"

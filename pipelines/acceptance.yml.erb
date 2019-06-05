@@ -144,7 +144,7 @@ resources:
   source:
     uri: git@github.com:cloudfoundry/log-cache-ci
     private_key: ((github-key-ci.yml/Notes/github_key))
-    branch: master
+    branch: mg-jr-loggr-agent
 
 - name: log-cache-ci-docker-images
   type: git
@@ -491,6 +491,12 @@ resources:
   type: bosh-io-release
   source:
     repository: cloudfoundry/loggregator-agent-release
+
+- name: loggregator-agent-dev-dir
+  type: git
+  source:
+    uri: https://github.com/attack/loggregator-agent-release
+    branch: develop
 
 - name: hourly-during-the-workday
   type: time
@@ -1268,7 +1274,11 @@ jobs:
       - get: bpm-release
       - get: cf-routing-release
       - get: loggregator-agent-release
+      - get: loggregator-agent-dev-dir
       attempts: 3
+    - task: build-agent
+      image: cf-deployment-concourse-tasks-image
+      file: log-cache-ci/tasks/create-agent-release/task.yml
     - task: "bake tile"
       image: pcf-observability-ci-image
       file: log-cache-ci/tasks/tile_bake/task.yml

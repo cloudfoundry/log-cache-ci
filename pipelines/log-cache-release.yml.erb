@@ -1,8 +1,7 @@
 <% projects =
   {
-    log_cache: { initial_version: "2.3.0" },
+    log_cache: { initial_version: "2.3.1" },
     log_cache_cli: { initial_version: "2.1.0" },
-    oss_metric_store_release: { initial_version: "1.1.2" },
   }
 %>
 groups:
@@ -14,15 +13,10 @@ groups:
   - create-lcr-final-release
   - publish-lcr-github-release
   - tag-lcr-for-backports
-  - oss-msr-patch-version
-  - oss-msr-minor-version
-  - oss-msr-major-version
-  - create-oss-msr-final-release
-  - publish-oss-msr-github-release
-  - tag-oss-msr-for-backports
   - log-cache-cli-bump-minor
   - log-cache-cli-bump-major
   - log-cache-cli-create-final-release
+
 - name: log-cache-release
   jobs:
   - lcr-patch-version
@@ -31,14 +25,7 @@ groups:
   - create-lcr-final-release
   - publish-lcr-github-release
   - tag-lcr-for-backports
-- name: oss-metric-store-release
-  jobs:
-  - oss-msr-patch-version
-  - oss-msr-minor-version
-  - oss-msr-major-version
-  - create-oss-msr-final-release
-  - publish-oss-msr-github-release
-  - tag-oss-msr-for-backports
+
 - name: log-cache-cli
   jobs:
   - log-cache-cli-bump-minor
@@ -122,42 +109,6 @@ resources:
     access_key_id: ((release-credentials.yml/Notes/loggregator-team-s3-access-key))
     secret_access_key: ((release-credentials.yml/Notes/loggregator-team-s3-secret-key))
 
-- name: oss-metric-store-release-version
-  type: semver
-  source:
-    initial_version: <%= projects[:oss_metric_store_release][:initial_version] %>
-    driver: gcs
-    bucket: log-cache-ci-versions
-    key: oss-metric-store
-    json_key: ((release-credentials.yml/Notes/gcp-service-account-key))
-
-- name: oss-metric-store-release-version-major
-  type: semver
-  source:
-    initial_version: <%= projects[:oss_metric_store_release][:initial_version] %>
-    driver: gcs
-    bucket: log-cache-ci-versions
-    key: oss-metric-store
-    json_key: ((release-credentials.yml/Notes/gcp-service-account-key))
-
-- name: oss-metric-store-release-version-minor
-  type: semver
-  source:
-    initial_version: <%= projects[:oss_metric_store_release][:initial_version] %>
-    driver: gcs
-    bucket: log-cache-ci-versions
-    key: oss-metric-store
-    json_key: ((release-credentials.yml/Notes/gcp-service-account-key))
-
-- name: oss-metric-store-release-version-patch
-  type: semver
-  source:
-    initial_version: <%= projects[:oss_metric_store_release][:initial_version] %>
-    driver: gcs
-    bucket: log-cache-ci-versions
-    key: oss-metric-store
-    json_key: ((release-credentials.yml/Notes/gcp-service-account-key))
-
 - name: log-cache-cli-github-release-drafts
   type: github-release
   source:
@@ -186,13 +137,6 @@ resources:
     uri: git@github.com:pivotal-cf/denver-locks
     private_key: ((github-key-ci.yml/Notes/github_key))
 
-- name: log-cache
-  type: git
-  source:
-    uri: git@github.com:cloudfoundry/log-cache
-    branch: master
-    private_key: ((github-key-ci.yml/Notes/github_key))
-
 - name: log-cache-release-develop
   type: git
   source:
@@ -215,30 +159,6 @@ resources:
     access_token: ((github-key-ci.yml/Notes/github-access-token))
     drafts: true
 
-- name: oss-metric-store-release-develop
-  type: git
-  source:
-    uri: git@github.com:cloudfoundry/metric-store-release
-    branch: develop
-    private_key: ((github-key-ci.yml/Notes/ms_github_private_key))
-    clean_tags: true
-
-- name: oss-metric-store-release-master
-  type: git
-  source:
-    uri: git@github.com:cloudfoundry/metric-store-release
-    branch: master
-    private_key: ((github-key-ci.yml/Notes/ms_github_private_key))
-    clean_tags: true
-
-- name: oss-metric-store-github-release-drafts
-  type: github-release
-  source:
-    user: cloudfoundry
-    repository: metric-store-release
-    access_token: ((github-key-ci.yml/Notes/metric-store-access-token))
-    drafts: true
-
 - name: slack-alert
   type: slack-notification
   source:
@@ -253,23 +173,16 @@ resources:
     access_key_id: ((release-credentials.yml/Notes/loggregator-team-s3-access-key))
     secret_access_key: ((release-credentials.yml/Notes/loggregator-team-s3-secret-key))
 
-- name: oss-metric-store-release-tarball
-  type: gcs-resource
-  source:
-    bucket: oss-metric-store-releases
-    versioned_file: release.tgz
-    json_key: ((release-credentials.yml/Notes/gcp-service-account-key))
-
 shared:
-  - &send-alert-message
-    do:
-    - put: slack-alert
-      params:
-        silent: true
-        username: ((slack-ci.yml/Notes/slack_alert_username))
-        icon_url: ((slack-ci.yml/Notes/slack_alert_icon_url))
-        channel: ((slack-ci.yml/Notes/slack_alert_channel))
-        text_file: messages/success.txt
+- &send-alert-message
+  do:
+  - put: slack-alert
+    params:
+      silent: true
+      username: ((slack-ci.yml/Notes/slack_alert_username))
+      icon_url: ((slack-ci.yml/Notes/slack_alert_icon_url))
+      channel: ((slack-ci.yml/Notes/slack_alert_channel))
+      text_file: messages/success.txt
 
 jobs:
 - name: lcr-patch-version
@@ -360,7 +273,6 @@ jobs:
     - get: log-cache-release-master
     - get: log-cache-ci
     - get: log-cache-release-version
-    - get: log-cache
   - task: create-final-release
     file: log-cache-ci/tasks/create-final-release/task.yml
     params:
@@ -376,10 +288,6 @@ jobs:
     params:
       repository: log-cache-release-develop-modified
       rebase: false
-  - put: log-cache
-    params:
-      repository: log-cache-modified
-      only_tag: true
 
 - name: publish-lcr-github-release
   serial: true
@@ -444,188 +352,6 @@ jobs:
       file: log-cache-ci/tasks/alert-message-release-end/task.yml
       input_mapping:
         version: log-cache-release-version
-    - <<: *send-alert-message
-
-- name: oss-msr-patch-version
-  plan:
-  - aggregate:
-    - get: cf-deployment-concourse-tasks-image
-    - get: log-cache-ci
-    - get: oss-metric-store-release-version
-    - get: oss-metric-store-release-version-patch
-      params: {bump: patch}
-  - task: create-message
-    file: log-cache-ci/tasks/alert-message-release-start/task.yml
-    image: cf-deployment-concourse-tasks-image
-    input_mapping:
-      version: oss-metric-store-release-version-patch
-    params:
-      LEVEL: patch
-      APP: metric-store
-  - task: sync-versioning
-    file: log-cache-ci/tasks/sync_versions/patch.yml
-    input_mapping:
-      this-version: oss-metric-store-release-version-patch
-      main-version: oss-metric-store-release-version
-  on_success:
-    do:
-    - put: oss-metric-store-release-version
-      params: {file: new-main-version/version}
-    - put: oss-metric-store-release-version-patch
-      params: {file: new-main-version/version}
-    - <<: *send-alert-message
-
-- name: oss-msr-minor-version
-  plan:
-  - aggregate:
-    - get: cf-deployment-concourse-tasks-image
-    - get: log-cache-ci
-    - get: oss-metric-store-release-version
-    - get: oss-metric-store-release-version-minor
-      params: {bump: minor}
-  - task: create-message
-    file: log-cache-ci/tasks/alert-message-release-start/task.yml
-    image: cf-deployment-concourse-tasks-image
-    input_mapping:
-      version: oss-metric-store-release-version-minor
-    params:
-      LEVEL: minor
-      APP: metric-store
-  - task: sync-versioning
-    file: log-cache-ci/tasks/sync_versions/minor.yml
-    input_mapping:
-      this-version: oss-metric-store-release-version-minor
-      main-version: oss-metric-store-release-version
-  on_success:
-    do:
-    - put: oss-metric-store-release-version
-      params: {file: new-main-version/version}
-    - put: oss-metric-store-release-version-minor
-      params: {file: new-main-version/version}
-    - <<: *send-alert-message
-
-- name: oss-msr-major-version
-  plan:
-  - aggregate:
-    - get: cf-deployment-concourse-tasks-image
-    - get: log-cache-ci
-    - get: oss-metric-store-release-version-major
-      params: {bump: major}
-  - task: create-message
-    file: log-cache-ci/tasks/alert-message-release-start/task.yml
-    image: cf-deployment-concourse-tasks-image
-    input_mapping:
-      version: oss-metric-store-release-version-major
-    params:
-      LEVEL: major
-      APP: metric-store
-  on_success:
-    do:
-    - put: oss-metric-store-release-version
-      params: {file: oss-metric-store-release-version-major/version}
-    - put: oss-metric-store-release-version-major
-      params: {file: oss-metric-store-release-version-major/version}
-    - <<: *send-alert-message
-
-- name: create-oss-msr-final-release
-  serial: true
-  disable_manual_trigger: true
-  plan:
-  - get: oss-metric-store-release-version-patch
-    trigger: true
-    passed: [oss-msr-patch-version]
-  - get: oss-metric-store-release-version-minor
-    trigger: true
-    passed: [oss-msr-minor-version]
-  - get: oss-metric-store-release-version-major
-    trigger: true
-    passed: [oss-msr-major-version]
-  - aggregate:
-    - get: cf-deployment-concourse-tasks
-    - get: oss-metric-store-release-develop
-    - get: oss-metric-store-release-master
-    - get: log-cache-ci
-    - get: oss-metric-store-release-version
-  - task: create-private-release
-    file: log-cache-ci/tasks/create-private-release/task.yml
-    input_mapping:
-      release-master: oss-metric-store-release-master
-      release-develop: oss-metric-store-release-develop
-      release-version: oss-metric-store-release-version
-    params:
-      JSON_KEY: ((release-credentials.yml/Notes/gcp-service-account-key))
-      GITHUB_PRIVATE_KEY: ((github-key-ci.yml/Notes/ms_github_private_key))
-  - put: oss-metric-store-release-tarball
-    params:
-      file: release-tarball/release.tgz
-  - put: oss-metric-store-release-develop
-    params:
-      repository: release-develop-modified
-      rebase: false
-
-- name: publish-oss-msr-github-release
-  serial: true
-  disable_manual_trigger: true
-  plan:
-  - aggregate:
-    - get: oss-metric-store-release-version
-      trigger: true
-      passed: [create-oss-msr-final-release]
-    - get: oss-metric-store-release-tarball
-    - get: log-cache-ci
-  - task: github-publish-release-metadata
-    file: log-cache-ci/tasks/publish-github-release/task.yml
-    input_mapping:
-      release-version: oss-metric-store-release-version
-      release-tarball: oss-metric-store-release-tarball
-    params:
-      PROJECT_NAME: Metric Store
-  - put: oss-metric-store-github-release-drafts
-    params:
-      name: github-release/name
-      tag: github-release/tag
-      body: github-release/body
-      globs:
-      - github-release/*.tgz
-
-- name: tag-oss-msr-for-backports
-  serial: true
-  disable_manual_trigger: true
-  plan:
-  - aggregate:
-    - get: oss-metric-store-release-version
-      trigger: true
-      passed: [publish-oss-msr-github-release]
-    - get: log-cache-ci
-    - get: log-cache-deployments
-    - get: denver-locks
-    - get: cf-deployment-concourse-tasks
-  - do:
-    - task: snapshot-acceptance-environment
-      file: log-cache-ci/tasks/snapshot-acceptance-environment/task.yml
-      input_mapping:
-        bbl-state: denver-locks
-        log-cache-deployments: log-cache-deployments
-        release-version: oss-metric-store-release-version
-      params:
-        BBL_STATE_DIR: ((bbl_state_dir))
-    - put: log-cache-deployments
-      params:
-        repository: log-cache-deployments-modified
-        tag: oss-metric-store-release-version/version
-        tag_prefix: oss-metric-store-v
-  - put: log-cache-ci
-    params:
-      repository: log-cache-ci
-      tag: oss-metric-store-release-version/version
-      tag_prefix: oss-metric-store-v
-      only_tag: true
-  on_success:
-    do:
-    - task: create-message
-      file: log-cache-ci/tasks/alert-message-release-end/task.yml
-      input_mapping:
-        version: oss-metric-store-release-version
     - <<: *send-alert-message
 
 - name: log-cache-cli-bump-major

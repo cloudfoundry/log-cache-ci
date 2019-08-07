@@ -35,7 +35,6 @@ EOF
 
   final_release_abbrev=$(git rev-parse --abbrev-ref HEAD)
   final_release_sha=$(git rev-parse HEAD)
-  log_cache_release_sha=$(git rev-parse @:./src/code.cloudfoundry.org/log-cache)
   git tag "${tag_name}" ${final_release_sha}
 
   cp -r . ../log-cache-release-master-modified
@@ -47,9 +46,4 @@ pushd log-cache-release-develop
   git merge -v --no-ff -m "Merge final release artifacts" "local_master/${final_release_abbrev}"
 
   cp -r . ../log-cache-release-develop-modified
-popd
-
-pushd log-cache
-  git tag "${tag_name}" ${log_cache_release_sha}
-  cp -r . ../log-cache-modified
 popd

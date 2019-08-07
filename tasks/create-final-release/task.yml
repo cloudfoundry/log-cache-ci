@@ -9,13 +9,11 @@ inputs:
 - name: log-cache-release-develop
 - name: log-cache-release-version
 - name: log-cache-ci
-- name: log-cache
 
 outputs:
 - name: release-tarball
 - name: log-cache-release-master-modified
 - name: log-cache-release-develop-modified
-- name: log-cache-modified
 
 run:
   path: log-cache-ci/tasks/create-final-release/task

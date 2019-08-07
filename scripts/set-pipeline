@@ -180,10 +180,8 @@ function find_pipeline {
 
     if [[ "$pipeline" == pws* ]]; then
         TARGET="${TARGET:-pws}"
-        TEAM="${TEAM:-pcf-observability}"
     else
-        TARGET="${TARGET:-cf-denver}"
-        TEAM="${TEAM:-metric-store-log-cache}"
+        TARGET="${TARGET:-loggregator}"
     fi
 
     pipeline_name=$(echo "${pipeline}" | sed 's/\//-/g' | sed 's/.yml//' | sed 's/.erb//')
@@ -219,9 +217,9 @@ function validate_pipeline {
 
 function _login_fly {
   if [ -z "${DISPLAY}" ]; then
-    info_block "fly login" "DISPLAY=:1 fly -t $TARGET login -b -n $TEAM"
+    info_block "fly login" "DISPLAY=:1 fly -t $TARGET login -b"
   else
-    info_block "fly login" "fly -t $TARGET login -b -n $TEAM"
+    info_block "fly login" "fly -t $TARGET login -b"
   fi
 }
 
